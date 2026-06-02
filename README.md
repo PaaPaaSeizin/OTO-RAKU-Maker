@@ -1,4 +1,5 @@
 [MIDIをインポートするプラグインは「MIDI-File-Import-Plugin.js」をダウンロードし導入してください。]
+[推奨環境:Windows(Chrome)]
 
 全体概要
 
