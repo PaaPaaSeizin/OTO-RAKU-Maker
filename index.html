@@ -2,192 +2,1927 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HARDWARE ANALYZER v1.1</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>OTO-RAKU-Maker Stage6 - 音MADスタジオ (WAV修正版 / プラグイン対応)</title>
     <style>
-        :root {
-            --bg-color: #050505;
-            --panel-bg: #121212;
-            --accent: #007aff;
-            --danger: #ff3b30;
-            --text-main: #ffffff;
-            --text-dim: #888;
-            --border: #2c2c2e;
-            --list-bg: #1c1c1e;
+        * {
+            user-select: none;
+            box-sizing: border-box;
         }
-
         body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
+            background: #0a0a12;
+            font-family: 'Segoe UI', 'Courier New', monospace;
             margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            padding: 20px;
+            color: #eee;
         }
-
-        .main-card {
-            width: 95%;
-            max-width: 700px;
-            background: var(--panel-bg);
-            border-radius: 24px;
-            padding: 40px;
-            border: 1px solid var(--border);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
-        }
-
-        h1 { font-size: 1.8rem; margin: 0; text-align: center; }
-        .subtitle { color: var(--text-dim); font-size: 0.8rem; margin-bottom: 30px; text-align: center; }
-
-        .specs-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        @media (max-width: 600px) { .specs-grid { grid-template-columns: 1fr; } }
-
-        .spec-group {
-            background: var(--list-bg);
-            padding: 15px;
-            border-radius: 12px;
-            border: 1px solid #252525;
-        }
-
-        .group-label {
-            font-size: 0.7rem;
-            color: var(--accent);
-            font-weight: bold;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #333;
-            padding-bottom: 5px;
-            display: block;
-        }
-
-        .spec-row {
+        /* 新設ヘッダー */
+        .app-header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 5px;
-            font-size: 0.9rem;
+            align-items: center;
+            margin-bottom: 16px;
+            padding: 0 8px;
         }
-
-        .label { color: var(--text-dim); }
-        .value { color: var(--text-main); font-weight: 500; font-family: monospace; }
-
-        #start-btn {
-            background: var(--danger);
-            color: white;
+        .app-header .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #f0a35e, #ffd966);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .header-actions #projectName {
+            background: #0a0a12;
+            border: 1px solid #5a5a7a;
+            color: #ffd966;
+            border-radius: 20px;
+            padding: 4px 8px;
+            width: 140px;
+        }
+        .header-actions button {
+            background: #2e2e44;
             border: none;
-            width: 100%;
-            padding: 22px;
-            font-size: 1.4rem;
-            font-weight: 800;
-            border-radius: 16px;
+            color: white;
+            border-radius: 32px;
+            padding: 6px 14px;
             cursor: pointer;
-            transition: 0.2s;
-            box-shadow: 0 8px 15px rgba(255, 59, 48, 0.2);
+        }
+        /* 既存スタイル（変更なし） */
+        .app-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .instrument-sidebar {
+            width: 320px;
+            background: #151520;
+            border-radius: 28px;
+            padding: 16px;
+            border: 1px solid #2e2e44;
+            height: calc(100vh - 40px);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .instrument-list {
+            flex: 1;
+        }
+        .instrument-card, .bgm-card {
+            background: #1e1e2c;
+            border-radius: 20px;
+            margin-bottom: 16px;
+            padding: 12px;
+            border-left: 4px solid #f0a35e;
+        }
+        .instrument-card.selected {
+            background: #2a2a3e;
+            border-left-color: #ffaa66;
+            box-shadow: 0 0 0 1px #f0a35e;
+        }
+        .bgm-card {
+            border-left-color: #66aaff;
+        }
+        .inst-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .inst-name {
+            font-weight: bold;
+            background: #0a0a12;
+            border: 1px solid #5a5a7a;
+            color: #ffd966;
+            border-radius: 20px;
+            padding: 4px 8px;
+            width: 140px;
+        }
+        .inst-actions button {
+            background: #2e2e44;
+            border: none;
+            color: white;
+            border-radius: 20px;
+            padding: 2px 8px;
+            margin-left: 4px;
+            cursor: pointer;
+        }
+        .inst-controls {
+            margin-top: 8px;
+        }
+        .volume-row, .pitch-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            margin: 6px 0;
+        }
+        input[type="range"] { width: 100%; accent-color: #f0a35e; }
+        .mute-solo {
+            display: flex;
+            gap: 8px;
+            margin: 8px 0;
+        }
+        .mute-solo button {
+            flex: 1;
+            background: #2e2e44;
+            border: none;
+            border-radius: 30px;
+            padding: 4px;
+            cursor: pointer;
+        }
+        .mute-solo button.active.mute { background: #aa5555; }
+        .mute-solo button.active.solo { background: #55aa55; }
+        .file-load {
+            margin: 8px 0;
+            font-size: 0.7rem;
+        }
+        .test-btn {
+            background: #f0a35e;
+            border: none;
+            border-radius: 30px;
+            width: 100%;
+            padding: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+        .test-btn.playing {
+            background: #aa5555;
+        }
+        .add-inst-btn {
+            background: #3a3a5a;
+            border: none;
+            padding: 10px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 16px;
+            width: 100%;
+        }
+        .main-area {
+            flex: 1;
+            min-width: 600px;
+        }
+        .toolbar {
+            background: #151520;
+            border-radius: 28px;
+            padding: 12px 20px;
+            margin-bottom: 16px;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .toolbar button, .toolbar .magnet {
+            background: #2e2e44;
+            border: none;
+            color: white;
+            border-radius: 32px;
+            padding: 6px 14px;
+            cursor: pointer;
+        }
+        .magnet.active {
+            background: #f0a35e;
+            color: #1e1e2c;
+        }
+        .bpm-box {
+            background: #0a0a12;
+            padding: 4px 12px;
+            border-radius: 32px;
+        }
+        /* 追加: 尺表示用スタイル */
+        .time-display {
+            background: #0a0a12;
+            padding: 4px 12px;
+            border-radius: 32px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+        .grid-container {
+            background: #0a0a12;
+            border-radius: 24px;
+            padding: 10px;
+            overflow: auto;
+            max-height: 65vh;
+            position: relative;
+        }
+        .canvas-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        canvas {
+            display: block;
+            background: #1a1a2a;
+            cursor: crosshair;
+        }
+        .playhead {
+            position: absolute;
+            top: 0;
+            width: 3px;
+            background-color: #ff3366;
+            pointer-events: auto;
+            z-index: 10;
+            box-shadow: 0 0 4px #ff3366;
+            cursor: ew-resize;
+        }
+        .status {
+            margin-top: 12px;
+            padding: 8px;
+            background: #00000066;
+            border-radius: 20px;
+            text-align: center;
+            font-size: 0.8rem;
+        }
+        .footer-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 12px;
+        }
+        .multi-select-badge {
+            background: #3a6ea5;
+            border-radius: 16px;
+            padding: 2px 8px;
+            font-size: 0.7rem;
         }
 
-        #start-btn:hover { filter: brightness(1.2); transform: scale(1.01); }
+#refreshPluginListBtn {
+    background: #2e2e44;
+    border: none;
+    color: white;
+    border-radius: 32px;
+    padding: 6px 14px;
+    cursor: pointer;
+}
+        /* ========== プラグインモーダル ========== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: #1a1a2a;
+            border-radius: 28px;
+            width: 500px;
+            max-width: 90%;
+            max-height: 80%;
+            overflow-y: auto;
+            padding: 20px;
+            border: 1px solid #3a3a5a;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        }
+        .modal-content h3 {
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+        .plugin-list {
+            margin: 16px 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .plugin-item {
+            background: #2a2a3a;
+            border-radius: 16px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .plugin-item .plugin-name {
+            font-weight: bold;
+        }
+        .plugin-item button {
+            background: #3a3a5a;
+            border: none;
+            border-radius: 20px;
+            padding: 4px 10px;
+            cursor: pointer;
+            margin-left: 6px;
+        }
+        .plugin-item button.setting-btn {
+            background: #3a6ea5;
+        }
+        .plugin-item button.delete-btn {
+            background: #aa5555;
+        }
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 16px;
+        }
+        .modal-footer button {
+            background: #2e2e44;
+            border: none;
+            border-radius: 32px;
+            padding: 6px 14px;
+            cursor: pointer;
+        }
+        .file-input-label {
+            background: #2e2e44;
+            border-radius: 32px;
+            padding: 6px 14px;
+            cursor: pointer;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
 
-<div class="main-card">
-    <h1>SYSTEM ARCHITECTURE</h1>
-    <p class="subtitle">PRE-RUN HARDWARE ANALYSIS</p>
+<!-- 新設ヘッダー -->
+<div class="app-header">
+    <div class="logo">🎵 OTO-RAKU-Maker</div>
+    <div class="header-actions">
+        <input type="text" id="projectName" placeholder="プロジェクト名" value="音MAD">
+        <button id="saveProjectBtn">💿 プロジェクト保存</button>
+        <input type="file" id="loadProjectFile" accept=".otomap" style="display:none;">
+        <button id="loadProjectBtn">📂 読み込み</button>
+        <button id="pluginManagerBtn">🔌 プラグイン管理</button>
+    </div>
+</div>
 
-    <div class="specs-grid">
-        <div class="spec-group">
-            <span class="group-label">PROCESSOR</span>
-            <div class="spec-row">
-                <span class="label">Model</span>
-                <span class="value" id="cpu-name">Analyzing...</span>
-            </div>
-            <div class="spec-row">
-                <span class="label">Logical Cores</span>
-                <span class="value" id="cpu-threads">--</span>
-            </div>
-        </div>
-
-        <div class="spec-group">
-            <span class="group-label">GRAPHICS</span>
-            <div class="spec-row">
-                <span class="label">Renderer</span>
-                <span class="value" id="gpu-name">Analyzing...</span>
-            </div>
-            <div class="spec-row">
-                <span class="label">VRAM (Est.)</span>
-                <span class="value" id="gpu-vram">--</span>
-            </div>
-        </div>
-
-        <div class="spec-group">
-            <span class="group-label">MEMORY</span>
-            <div class="spec-row">
-                <span class="label">Capacity</span>
-                <span class="value" id="ram-cap">--</span>
-            </div>
-            <div class="spec-row">
-                <span class="label">Clock / Type</span>
-                <span class="value" id="ram-detail">Detecting...</span>
-            </div>
-        </div>
-
-        <div class="spec-group">
-            <span class="group-label">ENVIRONMENT</span>
-            <div class="spec-row">
-                <span class="label">Platform</span>
-                <span class="value" id="sys-os">--</span>
-            </div>
-            <div class="spec-row">
-                <span class="label">Engine</span>
-                <span class="value">WebGL 2.0</span>
-            </div>
+<div class="app-container">
+    <div class="instrument-sidebar">
+        <div style="font-size:1.3rem; margin-bottom:12px;">🎹 楽器</div>
+        <div class="instrument-list" id="instrumentList"></div>
+<button class="add-inst-btn" id="addInstrumentBtn" style="color: white;">+ 楽器を追加</button>
+        <div style="margin-top: 20px; border-top:1px solid #3a3a5a; padding-top:12px;">
+            <div style="font-size:1.1rem; margin-bottom:8px;">🎵 BGMトラック</div>
+            <div id="bgmPanel"></div>
         </div>
     </div>
 
-    <button id="start-btn">LAUNCH BENCHMARK</button>
+    <div class="main-area">
+        <div class="toolbar">
+            <div class="bpm-box">
+                <span>🎚️ BPM</span>
+                <input type="number" id="bpmInput" value="120" step="1" style="width:70px;">
+            </div>
+            <div class="magnet" id="magnetToggle">🧲 磁石 (64分) ON</div>
+            <button id="playStopBtn">▶ 再生/停止</button>
+            <button id="exportWavBtn">💾 WAV書き出し</button>
+            <button id="exportWavNoBgmBtn">🎤 WAV書き出し (BGMオフ)</button>
+            <div id="selectionCountBadge" class="multi-select-badge" style="display:none;">0個選択</div>
+            <!-- 追加: 尺表示 -->
+            <div class="time-display" id="timeDisplay">00:00.00 / 00:00.00</div>
+        </div>
+        <div class="grid-container" id="gridContainer">
+            <div class="canvas-wrapper" id="canvasWrapper">
+                <canvas id="pianoCanvas"></canvas>
+                <div id="playhead" class="playhead" style="display: block;"></div>
+            </div>
+        </div>
+        <div class="status" id="statusMsg">🎵 Ctrl+クリックで複数選択 | 磁石は64分音符単位でスナップ | 左右リサイズで素材の切り出し位置も連動</div>
+        <div class="footer-buttons">
+            <span id="selectionInfo"></span>
+        </div>
+    </div>
+</div>
+
+<!-- プラグイン管理モーダル -->
+<div id="pluginModal" class="modal">
+    <div class="modal-content">
+        <h3>🔌 プラグイン管理</h3>
+        <div class="plugin-list" id="pluginListContainer">
+            <!-- 動的にプラグイン一覧 -->
+        </div>
+        <div style="margin: 12px 0;">
+            <button id="pluginFileSelectBtn" class="tool-btn" style="background: #2e2e44; border: none; color: white; border-radius: 32px; padding: 6px 14px; cursor: pointer;">📂 JSファイルから追加</button>
+<input type="file" id="pluginFileInput" accept=".js" style="display:none;">
+            </label>
+            <button id="refreshPluginListBtn" class="modal-footer" style="margin-left: 8px;">🔄 再読込</button>
+        </div>
+        <div class="modal-footer">
+            <button id="closePluginModal">閉じる</button>
+        </div>
+    </div>
 </div>
 
 <script>
-    async function analyze() {
-        const threads = navigator.hardwareConcurrency || "Unknown";
-        document.getElementById('cpu-threads').innerText = threads + " Threads";
-        document.getElementById('cpu-name').innerText = threads >= 16 ? "High-End Multicore" : "Standard Processor";
+    // ========== プラグイン管理システム ==========
+    let plugins = []; // { id, name, scriptUrl, settingsUI, instanceId, scriptElement }
+    let nextPluginId = 1;
 
-        const canvas = document.createElement('canvas');
-        const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-        if (gl) {
-            const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-            const renderer = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : "Generic";
-            document.getElementById('gpu-name').innerText = renderer.split(',')[0].replace(/ANGLE \(.*\)/, '').trim();
-
-            const vram = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-            const vramEst = vram >= 16384 ? ">= 8GB" : "4GB or Less";
-            document.getElementById('gpu-vram').innerText = vramEst;
+    // プラグイン登録API (プラグインから呼び出される)
+    window.OTOPLUGIN = window.OTOPLUGIN || {};
+    window.OTOPLUGIN.registerPlugin = function(manifest) {
+        // manifest: { name, version, author, settingsUI, setup, destroy }
+        // 既存のプラグインかチェック
+        let existing = plugins.find(p => p.name === manifest.name);
+        if (existing) {
+            console.warn(`Plugin "${manifest.name}" already registered.`);
+            return;
         }
-
-        if (navigator.deviceMemory) {
-            document.getElementById('ram-cap').innerText = navigator.deviceMemory + " GB";
-            document.getElementById('ram-detail').innerText = "DDR4/5 @ High-Freq";
-        } else {
-            document.getElementById('ram-cap').innerText = "Unknown";
-            document.getElementById('ram-detail').innerText = "N/A";
+        const pluginId = nextPluginId++;
+        const newPlugin = {
+            id: pluginId,
+            name: manifest.name,
+            version: manifest.version || "1.0",
+            author: manifest.author || "",
+            scriptUrl: "dynamic",
+            settingsUI: manifest.settingsUI || null,
+            setup: manifest.setup || null,
+            destroy: manifest.destroy || null,
+            instance: null
+        };
+        plugins.push(newPlugin);
+        // セットアップがあれば実行
+        if (newPlugin.setup) {
+            try {
+                newPlugin.instance = newPlugin.setup(document, window, { mainApp: window.appContext });
+            } catch(e) { console.error("Plugin setup error:", e); }
         }
+        renderPluginList();
+        document.getElementById("statusMsg").innerText = `プラグイン「${manifest.name}」を読み込みました`;
+    };
 
-        const platform = navigator.platform;
-        document.getElementById('sys-os').innerText = platform;
+    // プラグインの登録解除
+    window.OTOPLUGIN.unregisterPlugin = function(name) {
+        const index = plugins.findIndex(p => p.name === name);
+        if (index !== -1) {
+            const p = plugins[index];
+            if (p.destroy && p.instance) {
+                try { p.destroy(p.instance); } catch(e) { console.error(e); }
+            }
+            plugins.splice(index, 1);
+            renderPluginList();
+            document.getElementById("statusMsg").innerText = `プラグイン「${name}」を削除しました`;
+            return true;
+        }
+        return false;
+    };
+
+    // 外部JSを読み込んでプラグインを追加
+    function loadPluginFromUrl(url) {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = url;
+            script.onload = () => {
+                resolve(true);
+            };
+            script.onerror = () => {
+                reject(new Error(`Failed to load script: ${url}`));
+            };
+            document.head.appendChild(script);
+        });
     }
 
-    window.onload = analyze;
+    // ファイルからプラグインを読み込み
+    function loadPluginFromFile(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const scriptContent = e.target.result;
+                const blob = new Blob([scriptContent], { type: 'application/javascript' });
+                const url = URL.createObjectURL(blob);
+                const script = document.createElement('script');
+                script.src = url;
+                script.onload = () => {
+                    URL.revokeObjectURL(url);
+                    resolve(true);
+                };
+                script.onerror = () => {
+                    URL.revokeObjectURL(url);
+                    reject(new Error("Script execution error"));
+                };
+                document.head.appendChild(script);
+            };
+            reader.onerror = () => reject(new Error("File read error"));
+            reader.readAsText(file);
+        });
+    }
 
-    document.getElementById('start-btn').onclick = () => {
-        // 次の工程である「benchmark_gpu.html」を呼び出します
-        console.log("Redirecting to GPU Stress Test...");
-        window.location.href = "benchmark.html";
+    // プラグイン一覧描画
+    function renderPluginList() {
+        const container = document.getElementById("pluginListContainer");
+        if (!container) return;
+        if (plugins.length === 0) {
+            container.innerHTML = '<div style="color:#aaa; text-align:center;">プラグインはありません</div>';
+            return;
+        }
+        container.innerHTML = plugins.map(p => `
+            <div class="plugin-item" data-id="${p.id}">
+                <div class="plugin-name">
+                    ${escapeHtml(p.name)} <span style="font-size:0.7rem; color:#aaa;">v${p.version}</span>
+                    ${p.author ? `<span style="font-size:0.6rem;"> by ${escapeHtml(p.author)}</span>` : ''}
+                </div>
+                <div>
+                    ${p.settingsUI ? `<button class="setting-btn" data-id="${p.id}">⚙️ 設定</button>` : ''}
+                    <button class="delete-btn" data-id="${p.id}">🗑️ 削除</button>
+                </div>
+            </div>
+        `).join('');
+        // イベント登録
+        document.querySelectorAll('.setting-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(btn.dataset.id);
+                const plugin = plugins.find(p => p.id === id);
+                if (plugin && plugin.settingsUI) {
+                    plugin.settingsUI();
+                } else {
+                    document.getElementById("statusMsg").innerText = "このプラグインに設定UIはありません";
+                }
+            });
+        });
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(btn.dataset.id);
+                const plugin = plugins.find(p => p.id === id);
+                if (plugin && confirm(`プラグイン「${plugin.name}」を削除しますか？`)) {
+                    window.OTOPLUGIN.unregisterPlugin(plugin.name);
+                }
+            });
+        });
+    }
+
+    // モーダル制御
+const pluginManagerBtn = document.getElementById("pluginManagerBtn");
+const modal = document.getElementById("pluginModal");
+const closeModalBtn = document.getElementById("closePluginModal");
+
+// モーダルを開く
+pluginManagerBtn.addEventListener("click", () => {
+    renderPluginList();
+    modal.classList.add("active");
+});
+closeModalBtn.addEventListener("click", () => {
+    modal.classList.remove("active");
+});
+
+// ファイル選択ボタン
+const pluginFileSelectBtn = document.getElementById("pluginFileSelectBtn");
+const pluginFileInput = document.getElementById("pluginFileInput");
+if (pluginFileSelectBtn && pluginFileInput) {
+    pluginFileSelectBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        pluginFileInput.click();
+    });
+    pluginFileInput.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+            await loadPluginFromFile(file);
+            document.getElementById("statusMsg").innerText = `プラグイン読み込み: ${file.name}`;
+            renderPluginList();
+        } catch(err) {
+            console.error(err);
+            document.getElementById("statusMsg").innerText = `プラグイン読み込みエラー: ${err.message}`;
+        }
+        pluginFileInput.value = '';
+    });
+}
+    // ファイル選択トリガー用ラベル対応
+    document.querySelector('.file-input-label')?.addEventListener('click', () => {
+        pluginFileInput.click();
+    });
+
+    // 内蔵プラグイン（書き換え版）: 使い方ガイド
+window.OTOPLUGIN.registerPlugin({
+    name: "使い方ガイド",
+    version: "1.0",
+    author: "OTO-RAKU",
+    settingsUI: () => {
+        alert("「使い方ガイド」について設定という概念はありますか？");
+    },
+    setup: (doc, win, ctx) => {
+        console.log("使い方プラグイン起動");
+        // ツールバーにボタンを追加
+        const toolbar = document.querySelector(".toolbar");
+        if (toolbar && !document.getElementById("howtoBtn")) {
+            const btn = document.createElement("button");
+            btn.id = "howtoBtn";
+            btn.textContent = "📖 使い方";
+            btn.style.marginLeft = "8px";
+            btn.addEventListener("click", () => {
+                const url = `https://www.youtube.com/watch?v=dQw4w9WgXcQ`;
+                window.open(url, "_blank");
+            });
+            toolbar.appendChild(btn);
+        }
+        return { buttonId: "howtoBtn" };
+    },
+    destroy: (instance) => {
+        const btn = document.getElementById("howtoBtn");
+        if (btn) btn.remove();
+        console.log("使い方プラグイン終了");
+    }
+});
+
+    // ========== 以下、既存のStage6スクリプト（全体） ==========
+    // ========== 音階 (2オクターブ・24音階・下が低音) ==========
+    let NOTE_NAMES = [];
+    for (let oct = 1; oct <= 2; oct++) {
+        NOTE_NAMES.push(`ド${oct}`, `ド#${oct}`, `レ${oct}`, `レ#${oct}`, `ミ${oct}`, `ファ${oct}`, `ファ#${oct}`, `ソ${oct}`, `ソ#${oct}`, `ラ${oct}`, `ラ#${oct}`, `シ${oct}`);
+    }
+    NOTE_NAMES.reverse();
+    let ROWS = NOTE_NAMES.length;
+    let CELL_W = 36;
+    let ROW_H = 40;
+    let BEATS = 32;
+
+// 64分音符単位のスナップ（分割など内部処理用）
+const SNAP_DIVISION = 64;
+function snapDivision(beat) {
+    return Math.round(beat * SNAP_DIVISION) / SNAP_DIVISION;
+}
+
+// 磁石用スナップ（整数拍＝4分音符）
+function snapMagnet(beat, enabled) {
+    if (!enabled) return beat;
+    return Math.round(beat);
+}
+
+    let instruments = [];
+    let pieces = [];
+    let bgmPiece = null;
+    let selectedInstId = null;
+    let nextInstId = 1;
+    let nextPieceId = 1;
+
+    let magnetEnabled = true;
+    let currentBPM = 120;
+    let isPlaying = false;
+    let audioCtx = null;
+    let scheduledSources = [];
+    let animationFrame = null;
+    let currentPlayheadBeat = 0;
+    let selectedPieceIds = [];
+    let clipboardPieces = [];
+    let lastContextMenuMousePos = { beat: 0, row: 0 };
+    let splitTargetPiece = null;
+
+    let historyStack = [];
+    let historyIndex = -1;
+    const MAX_HISTORY = 50;
+
+    let currentTestSource = null;
+
+    let canvas = document.getElementById("pianoCanvas");
+    let ctx = canvas.getContext("2d");
+    let canvasWrapper = document.getElementById("canvasWrapper");
+    let playheadDiv = document.getElementById("playhead");
+    let gridContainerDiv = document.getElementById("gridContainer");
+
+    let dragState = {
+        active: false, type: null, pieceId: null,
+        startMouseX: 0, startMouseY: 0,
+        originalCol: 0, originalLen: 0, originalRow: 0,
+        multiSelectMove: false, originalSelectedPieces: []
+    };
+    let contextMenuPieceId = null;
+    const RESIZE_THRESHOLD = 20;
+
+    // ========== 追加: 再生中のアクティブなソースを管理 ==========
+    let activePlaybackSources = []; // { src, gainNode, instId, pieceId, bgm }
+
+    // ========== 追加: 再生中の音量・ミュート・ソロをリアルタイム更新する関数 ==========
+    function isAnySolo() {
+        return instruments.some(inst => inst.solo === true);
+    }
+
+    function updateAllActiveGains() {
+        const anySolo = isAnySolo();
+        for (const item of activePlaybackSources) {
+            let targetGain = 0;
+            if (item.bgm) {
+                // BGMトラック
+                if (bgmPiece && !bgmPiece.mute && (!anySolo)) {
+                    targetGain = (bgmPiece.volume || 80) / 100;
+                } else {
+                    targetGain = 0;
+                }
+            } else {
+                const inst = instruments.find(i => i.id === item.instId);
+                if (inst) {
+                    if (inst.mute) {
+                        targetGain = 0;
+                    } else if (anySolo && !inst.solo) {
+                        targetGain = 0;
+                    } else {
+                        targetGain = inst.volume / 100;
+                    }
+                }
+            }
+            if (item.gainNode) {
+                item.gainNode.gain.value = targetGain;
+            }
+        }
+    }
+
+function updateAllActiveRates() {
+    for (const item of activePlaybackSources) {
+        if (item.bgm) continue;
+        const piece = pieces.find(p => p.id === item.pieceId);
+        const inst = instruments.find(i => i.id === item.instId);
+        if (piece && inst && item.src) {
+            const newRate = getPlaybackRate(piece, inst);
+            item.src.playbackRate.value = newRate;
+        }
+    }
+}
+
+    // 楽器の音量変更時にアクティブな該当楽器のgainを更新
+    function updateInstrumentVolume(instId) {
+        for (const item of activePlaybackSources) {
+            if (!item.bgm && item.instId === instId && item.gainNode) {
+                const inst = instruments.find(i => i.id === instId);
+                if (inst) {
+                    let val = inst.volume / 100;
+                    // ソロ/ミュート条件は updateAllActiveGains で一括処理するため、ここでは生の値にしておく
+                    // ただし、updateAllActiveGains を呼ぶのでここでは設定しない
+                }
+            }
+        }
+        updateAllActiveGains();
+    }
+
+    // ミュート/ソロ変更時に全体更新
+    function updateMuteSolo() {
+        updateAllActiveGains();
+    }
+
+    // BPM変更リアルタイム対応: 再生中なら停止して再開
+    let pendingRestart = false;
+    function applyBPMChange() {
+        if (isPlaying && !pendingRestart) {
+            pendingRestart = true;
+            const savedBeat = currentPlayheadBeat;
+            stopPlayback();
+            // 少し待ってから再開（オーディオコンテキストの状態を安定させる）
+            setTimeout(() => {
+                currentPlayheadBeat = savedBeat;
+                playPattern();
+                pendingRestart = false;
+            }, 50);
+        }
+    }
+
+    // ========== 追加: 音量スライダーとミュート/ソロのイベントを拡張 ==========
+    // 元の bindInstrumentEvents 内で登録されているイベントに加えて、
+    // リアルタイム更新用のリスナーを追加するため、関数を拡張する。
+    // 元の bindInstrumentEvents を退避してラップする。
+    const originalBindInstrumentEvents = bindInstrumentEvents;
+    bindInstrumentEvents = function() {
+        originalBindInstrumentEvents();
+        // 追加: 音量スライダーとミュート/ソロボタンにリアルタイム更新用のイベントを追加
+        document.querySelectorAll('.inst-volume').forEach(sl => {
+            sl.removeEventListener('input', window._volumeRealtimeHandler);
+            window._volumeRealtimeHandler = (e) => {
+                const id = parseInt(sl.dataset.id);
+                if (isPlaying) {
+                    updateInstrumentVolume(id);
+                }
+            };
+            sl.addEventListener('input', window._volumeRealtimeHandler);
+        });
+        document.querySelectorAll('.mute-btn, .solo-btn').forEach(btn => {
+            btn.removeEventListener('click', window._muteSoloRealtimeHandler);
+            window._muteSoloRealtimeHandler = (e) => {
+                if (isPlaying) {
+                    setTimeout(() => updateMuteSolo(), 10);
+                }
+            };
+            btn.addEventListener('click', window._muteSoloRealtimeHandler);
+        });
+    };
+
+    // BGMの音量変更リアルタイム対応
+    const originalRenderBgmPanel = renderBgmPanel;
+    renderBgmPanel = function() {
+        originalRenderBgmPanel();
+        const bgmVolumeSlider = document.getElementById("bgmVolume");
+        if (bgmVolumeSlider) {
+            bgmVolumeSlider.removeEventListener('input', window._bgmVolumeRealtimeHandler);
+            window._bgmVolumeRealtimeHandler = () => {
+                if (isPlaying && bgmPiece) {
+                    updateAllActiveGains();
+                }
+            };
+            bgmVolumeSlider.addEventListener('input', window._bgmVolumeRealtimeHandler);
+        }
+        const bgmMuteBtn = document.getElementById("bgmMuteBtn");
+        if (bgmMuteBtn) {
+            bgmMuteBtn.removeEventListener('click', window._bgmMuteRealtimeHandler);
+            window._bgmMuteRealtimeHandler = () => {
+                if (isPlaying) {
+                    setTimeout(() => updateAllActiveGains(), 10);
+                }
+            };
+            bgmMuteBtn.addEventListener('click', window._bgmMuteRealtimeHandler);
+        }
+    };
+
+    // BPM入力のリアルタイム対応 (init内のイベントを拡張)
+    // init 内で既に addEventListener されているので、それに加えてリアルタイム処理を追加する。
+    // 元のイベントは保持したまま、別のリスナーを追加する。
+
+    function saveToHistory() {
+        const state = {
+            pieces: JSON.parse(JSON.stringify(pieces)),
+            selectedPieceIds: [...selectedPieceIds],
+            nextPieceId: nextPieceId
+        };
+        historyStack = historyStack.slice(0, historyIndex + 1);
+        historyStack.push(state);
+        if (historyStack.length > MAX_HISTORY) historyStack.shift();
+        else historyIndex = historyStack.length - 1;
+    }
+
+    function undo() {
+        if (historyIndex <= 0) return;
+        historyIndex--;
+        restoreState(historyStack[historyIndex]);
+    }
+
+    function redo() {
+        if (historyIndex >= historyStack.length - 1) return;
+        historyIndex++;
+        restoreState(historyStack[historyIndex]);
+    }
+
+    function restoreState(state) {
+        pieces = JSON.parse(JSON.stringify(state.pieces));
+        selectedPieceIds = [...state.selectedPieceIds];
+        nextPieceId = state.nextPieceId;
+        updateMaxBeats();
+        drawGridAndPieces();
+        updateSelectionBadge();
+        document.getElementById("statusMsg").innerText = `復元しました (${historyIndex+1}/${historyStack.length})`;
+    }
+
+    function withHistory(fn) {
+        fn();
+        saveToHistory();
+    }
+
+    function beatsToPx(beats) { return beats * CELL_W; }
+    function pxToBeats(px) { return px / CELL_W; }
+    function rowsToPx(row) { return row * ROW_H; }
+    function pxToRow(px) { return Math.floor(px / ROW_H); }
+
+    function updateMaxBeats() {
+        let maxCol = 0;
+        for (let p of pieces) {
+            let right = p.col + p.length;
+            if (right > maxCol) maxCol = right;
+        }
+        if (bgmPiece && bgmPiece.buffer) {
+            let bgmLenBeats = (bgmPiece.buffer.duration * currentBPM) / 60;
+            if (bgmLenBeats > maxCol) maxCol = bgmLenBeats;
+        }
+        maxCol = Math.ceil(maxCol) + 2;
+        if (maxCol > BEATS) {
+            BEATS = maxCol;
+            resizeCanvas();
+        }
+    }
+
+    function resizeCanvas() {
+        canvas.width = beatsToPx(BEATS);
+        canvas.height = rowsToPx(ROWS);
+        canvasWrapper.style.width = canvas.width + 'px';
+        canvasWrapper.style.height = canvas.height + 'px';
+        drawGridAndPieces();
+        updatePlayheadPosition();
+    }
+
+    function initAudio() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    function centsToRate(cents) { return Math.pow(2, cents / 1200); }
+    function getSemitoneFromRow(row) { return (ROWS - 1 - row); }
+    function getPlaybackRate(piece, inst) {
+        let semitone = getSemitoneFromRow(piece.row);
+        let rate = centsToRate(inst.pitchCents) * Math.pow(2, semitone / 12);
+        if (piece.stretchMode) {
+            const pieceDurationSec = (piece.length * 60) / currentBPM;
+            const sourceDuration = (piece.endOffset ?? inst.sampleDuration) - (piece.startOffset ?? 0);
+            if (sourceDuration > 0 && pieceDurationSec > 0) rate *= (sourceDuration / pieceDurationSec);
+        }
+        return rate;
+    }
+    function getPieceTotalDuration(piece, inst) {
+        const pieceLengthSec = (piece.length * 60) / currentBPM;
+        const sourceDuration = (piece.endOffset ?? inst.sampleDuration) - (piece.startOffset ?? 0);
+        const rate = getPlaybackRate(piece, inst);
+        let naturalDuration;
+        if (piece.stretchMode) naturalDuration = pieceLengthSec;
+        else naturalDuration = sourceDuration / rate;
+        return Math.min(naturalDuration, pieceLengthSec);
+    }
+    function getPieceStartInfo(piece, inst, globalStartBeat) {
+        const pieceStartBeat = piece.col;
+        const pieceEndBeat = piece.col + piece.length;
+        if (pieceEndBeat <= globalStartBeat) return null;
+        let actualStartBeat = pieceStartBeat;
+        let offsetWithinPiece = 0;
+        if (globalStartBeat > pieceStartBeat) {
+            const ratio = (globalStartBeat - pieceStartBeat) / piece.length;
+            const totalDur = getPieceTotalDuration(piece, inst);
+            offsetWithinPiece = totalDur * ratio;
+            actualStartBeat = globalStartBeat;
+        }
+        const startTimeSec = (actualStartBeat - globalStartBeat) * 60 / currentBPM;
+        const finalOffset = (piece.startOffset ?? 0) + offsetWithinPiece;
+        return { startTimeSec, offsetWithinPiece: finalOffset };
+    }
+
+    function addInstrument(name = "新楽器") {
+        const id = nextInstId++;
+        instruments.push({ id, name, buffer: null, pitchCents: 0, volume: 80, mute: false, solo: false, sampleDuration: 0.5 });
+        if (selectedInstId === null) selectedInstId = id;
+        renderInstrumentPanel();
+        drawGridAndPieces();
+        saveToHistory();
+    }
+    function deleteInstrument(id) {
+        withHistory(() => {
+            instruments = instruments.filter(inst => inst.id !== id);
+            pieces = pieces.filter(p => p.instId !== id);
+            if (selectedInstId === id) selectedInstId = instruments.length ? instruments[0].id : null;
+            selectedPieceIds = [];
+            updateMaxBeats();
+        });
+        renderInstrumentPanel();
+        drawGridAndPieces();
+        updateSelectionBadge();
+    }
+    function renderInstrumentPanel() {
+        const container = document.getElementById("instrumentList");
+        container.innerHTML = "";
+        instruments.forEach(inst => {
+            const card = document.createElement("div");
+            card.className = `instrument-card ${selectedInstId === inst.id ? 'selected' : ''}`;
+            card.dataset.id = inst.id;
+            card.addEventListener("click", (e) => {
+                e.stopPropagation();
+                selectedInstId = inst.id;
+                selectedPieceIds = [];
+                renderInstrumentPanel();
+                drawGridAndPieces();
+                updateSelectionBadge();
+                document.getElementById("statusMsg").innerText = `楽器「${inst.name}」を選択中`;
+            });
+            card.innerHTML = `
+                <div class="inst-header">
+                    <input type="text" class="inst-name" value="${escapeHtml(inst.name)}" data-id="${inst.id}">
+                    <div class="inst-actions"><button class="del-inst" data-id="${inst.id}">🗑️</button></div>
+                </div>
+                <div class="inst-controls">
+                    <div class="volume-row">音量 ${inst.volume}% <input type="range" class="inst-volume" data-id="${inst.id}" min="0" max="100" value="${inst.volume}"></div>
+                    <div class="pitch-row">ピッチ ${inst.pitchCents} ct <input type="range" class="inst-pitch" data-id="${inst.id}" min="-200" max="200" value="${inst.pitchCents}" step="1"></div>
+                    <div class="mute-solo">
+                        <button class="mute-btn ${inst.mute ? 'active mute' : ''}" data-id="${inst.id}">MUTE</button>
+                        <button class="solo-btn ${inst.solo ? 'active solo' : ''}" data-id="${inst.id}">SOLO</button>
+                    </div>
+                    <div class="file-load"><input type="file" accept="audio/*" class="audio-file" data-id="${inst.id}"></div>
+                    <button class="test-btn" data-id="${inst.id}">▶ テスト再生</button>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+        bindInstrumentEvents();
+        renderBgmPanel();
+    }
+    function bindInstrumentEvents() {
+        document.querySelectorAll('.inst-name').forEach(inp => inp.addEventListener('change', (e) => {
+            const id = parseInt(inp.dataset.id);
+            const inst = instruments.find(i => i.id === id);
+            if (inst) inst.name = inp.value;
+            renderInstrumentPanel();
+        }));
+        document.querySelectorAll('.del-inst').forEach(btn => btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteInstrument(parseInt(btn.dataset.id));
+        }));
+        document.querySelectorAll('.inst-volume').forEach(sl => sl.addEventListener('input', (e) => {
+            const inst = instruments.find(i => i.id === parseInt(sl.dataset.id));
+            if (inst) inst.volume = parseInt(sl.value);
+        }));
+        document.querySelectorAll('.inst-pitch').forEach(sl => sl.addEventListener('input', (e) => {
+    const inst = instruments.find(i => i.id === parseInt(sl.dataset.id));
+    if (inst) {
+        inst.pitchCents = parseInt(sl.value);
+        drawGridAndPieces();
+        if (isPlaying) {
+            updateAllActiveRates();
+        }
+    }
+}));
+        document.querySelectorAll('.mute-btn').forEach(btn => btn.addEventListener('click', (e) => {
+            const inst = instruments.find(i => i.id === parseInt(btn.dataset.id));
+            if (inst) inst.mute = !inst.mute;
+            renderInstrumentPanel();
+        }));
+        document.querySelectorAll('.solo-btn').forEach(btn => btn.addEventListener('click', (e) => {
+            const inst = instruments.find(i => i.id === parseInt(btn.dataset.id));
+            if (inst) inst.solo = !inst.solo;
+            renderInstrumentPanel();
+        }));
+        document.querySelectorAll('.audio-file').forEach(inp => inp.addEventListener('change', async (e) => {
+            const id = parseInt(inp.dataset.id);
+            const file = e.target.files[0];
+            if (!file) return;
+            initAudio();
+            const arrayBuf = await file.arrayBuffer();
+            const decoded = await audioCtx.decodeAudioData(arrayBuf);
+            const inst = instruments.find(i => i.id === id);
+            if (inst) {
+                inst.buffer = decoded;
+                inst.sampleDuration = decoded.duration;
+                document.getElementById("statusMsg").innerText = `読み込み完了: ${file.name} (${decoded.duration.toFixed(2)}秒)`;
+            }
+            drawGridAndPieces();
+        }));
+        document.querySelectorAll('.test-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(btn.dataset.id);
+                const inst = instruments.find(i => i.id === id);
+                if (!inst || !inst.buffer) return;
+                initAudio();
+                if (currentTestSource) {
+                    try { currentTestSource.stop(); } catch(e) {}
+                    currentTestSource = null;
+                    btn.classList.remove("playing");
+                    btn.innerText = "▶ テスト再生";
+                    return;
+                }
+                const src = audioCtx.createBufferSource();
+                src.buffer = inst.buffer;
+                src.playbackRate.value = centsToRate(inst.pitchCents);
+                const gain = audioCtx.createGain();
+                gain.gain.value = inst.volume / 100;
+                src.connect(gain);
+                gain.connect(audioCtx.destination);
+                src.start();
+                currentTestSource = src;
+                btn.classList.add("playing");
+                btn.innerText = "⏹️ 停止";
+                src.onended = () => {
+                    if (currentTestSource === src) {
+                        currentTestSource = null;
+                        btn.classList.remove("playing");
+                        btn.innerText = "▶ テスト再生";
+                    }
+                };
+            });
+        });
+    }
+    function renderBgmPanel() {
+        const container = document.getElementById("bgmPanel");
+        container.innerHTML = "";
+        const bgm = bgmPiece || { name: "BGM", volume: 80, mute: false };
+        const card = document.createElement("div");
+        card.className = "bgm-card";
+        card.innerHTML = `
+            <div class="inst-header"><span>🎵 ${bgm.name}</span><button id="bgmClearBtn" style="background:#3a3a5a; border:none; border-radius:20px; padding:2px 8px;">クリア</button></div>
+            <div class="volume-row">音量 ${bgm.volume}% <input type="range" id="bgmVolume" min="0" max="100" value="${bgm.volume}"></div>
+            <div class="mute-solo"><button id="bgmMuteBtn" class="${bgm.mute ? 'active mute' : ''}">MUTE</button></div>
+            <div class="file-load"><input type="file" accept="audio/*" id="bgmFileInput"></div>
+            <button id="bgmTestBtn" class="test-btn">▶ BGMテスト</button>
+        `;
+        container.appendChild(card);
+        document.getElementById("bgmFileInput")?.addEventListener("change", async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            initAudio();
+            const buf = await file.arrayBuffer();
+            const decoded = await audioCtx.decodeAudioData(buf);
+            if (!bgmPiece) bgmPiece = { id: 'bgm', name: file.name, buffer: decoded, volume: 80, mute: false, sampleDuration: decoded.duration };
+            else { bgmPiece.buffer = decoded; bgmPiece.sampleDuration = decoded.duration; bgmPiece.name = file.name; }
+            renderBgmPanel();
+            updateMaxBeats();
+            drawGridAndPieces();
+            document.getElementById("statusMsg").innerText = `BGM読み込み: ${file.name}`;
+        });
+        document.getElementById("bgmVolume")?.addEventListener("input", (e) => { if(bgmPiece) bgmPiece.volume = parseInt(e.target.value); });
+        document.getElementById("bgmMuteBtn")?.addEventListener("click", () => { if(bgmPiece) { bgmPiece.mute = !bgmPiece.mute; renderBgmPanel(); } });
+        let bgmTestSource = null;
+        const bgmTestBtn = document.getElementById("bgmTestBtn");
+        if (bgmTestBtn) {
+            bgmTestBtn.addEventListener("click", () => {
+                if (!bgmPiece || !bgmPiece.buffer) return;
+                initAudio();
+                if (bgmTestSource) {
+                    try { bgmTestSource.stop(); } catch(e) {}
+                    bgmTestSource = null;
+                    bgmTestBtn.classList.remove("playing");
+                    bgmTestBtn.innerText = "▶ BGMテスト";
+                    return;
+                }
+                const src = audioCtx.createBufferSource();
+                src.buffer = bgmPiece.buffer;
+                const gain = audioCtx.createGain();
+                gain.gain.value = (bgmPiece.volume/100);
+                src.connect(gain);
+                gain.connect(audioCtx.destination);
+                src.start();
+                bgmTestSource = src;
+                bgmTestBtn.classList.add("playing");
+                bgmTestBtn.innerText = "⏹️ 停止";
+                src.onended = () => {
+                    if (bgmTestSource === src) {
+                        bgmTestSource = null;
+                        bgmTestBtn.classList.remove("playing");
+                        bgmTestBtn.innerText = "▶ BGMテスト";
+                    }
+                };
+            });
+        }
+        document.getElementById("bgmClearBtn")?.addEventListener("click", () => { bgmPiece = null; renderBgmPanel(); updateMaxBeats(); drawGridAndPieces(); });
+    }
+
+    function addPiece(instId, row, col, length = 1.0, stretchMode = false, startOffset = 0, endOffset = null) {
+        const newPiece = { id: nextPieceId++, instId, row, col, length, stretchMode, startOffset, endOffset };
+        pieces.push(newPiece);
+        updateMaxBeats();
+        drawGridAndPieces();
+        return newPiece;
+    }
+    function deletePieces(pieceIds) {
+        pieces = pieces.filter(p => !pieceIds.includes(p.id));
+        selectedPieceIds = selectedPieceIds.filter(id => !pieceIds.includes(id));
+        updateMaxBeats();
+        drawGridAndPieces();
+        updateSelectionBadge();
+    }
+    function copyPieces(pieceIds) {
+        clipboardPieces = pieces.filter(p => pieceIds.includes(p.id)).map(p => ({ ...p, id: null }));
+        document.getElementById("statusMsg").innerText = `${clipboardPieces.length}個のピースをコピーしました`;
+    }
+    function pastePieces(baseBeat, baseRow) {
+        if (!clipboardPieces.length) return;
+        let minCol = Math.min(...clipboardPieces.map(p => p.col));
+        let minRow = Math.min(...clipboardPieces.map(p => p.row));
+        let newPieceIds = [];
+        for (let cp of clipboardPieces) {
+            let newCol = baseBeat + (cp.col - minCol);
+            let newRow = baseRow + (cp.row - minRow);
+            if (newRow < 0) newRow = 0;
+            if (newRow >= ROWS) newRow = ROWS-1;
+            if (newCol < 0) newCol = 0;
+            let newP = addPiece(cp.instId, newRow, newCol, cp.length, cp.stretchMode, cp.startOffset ?? 0, cp.endOffset ?? null);
+            newPieceIds.push(newP.id);
+        }
+        selectedPieceIds = newPieceIds;
+        drawGridAndPieces();
+        updateSelectionBadge();
+        document.getElementById("statusMsg").innerText = `${newPieceIds.length}個のピースを貼り付け (選択済み)`;
+        saveToHistory();
+    }
+    function toggleStretchMode(pieceIds) {
+        withHistory(() => {
+            for (let id of pieceIds) {
+                const p = pieces.find(p => p.id === id);
+                if (p) p.stretchMode = !p.stretchMode;
+            }
+        });
+        drawGridAndPieces();
+    }
+    function splitPiece(pieceId, splitBeat) {
+    const piece = pieces.find(p => p.id === pieceId);
+    if (!piece) return;
+    // ★ 磁石のON/OFFに関係なく、64分音符単位でスナップ
+    splitBeat = snapDivision(splitBeat);
+    if (splitBeat <= piece.col || splitBeat >= piece.col + piece.length) return;
+        const inst = instruments.find(i => i.id === piece.instId);
+        if (!inst) return;
+        const totalDur = getPieceTotalDuration(piece, inst);
+        const ratio = (splitBeat - piece.col) / piece.length;
+        const splitOffset = (piece.startOffset ?? 0) + totalDur * ratio;
+        const sourceEnd = piece.endOffset ?? inst.sampleDuration;
+        const leftPiece = {
+            ...piece,
+            id: nextPieceId++,
+            length: splitBeat - piece.col,
+            startOffset: piece.startOffset ?? 0,
+            endOffset: splitOffset
+        };
+        const rightPiece = {
+            ...piece,
+            id: nextPieceId++,
+            col: splitBeat,
+            length: piece.length - (splitBeat - piece.col),
+            startOffset: splitOffset,
+            endOffset: sourceEnd
+        };
+        withHistory(() => {
+            pieces = pieces.filter(p => p.id !== piece.id);
+            pieces.push(leftPiece, rightPiece);
+            selectedPieceIds = [leftPiece.id, rightPiece.id];
+            updateMaxBeats();
+        });
+        drawGridAndPieces();
+        updateSelectionBadge();
+        document.getElementById("statusMsg").innerText = "ピースを分割しました (64分単位でスナップ)";
+    }
+    function updateSelectionBadge() {
+        const badge = document.getElementById("selectionCountBadge");
+        if (selectedPieceIds.length > 1) {
+            badge.style.display = "inline-block";
+            badge.innerText = `${selectedPieceIds.length}個選択`;
+        } else {
+            badge.style.display = "none";
+        }
+    }
+    function moveSelectedPieces(deltaCol, deltaRow) {
+    if (selectedPieceIds.length === 0) return;
+    withHistory(() => {
+        for (let id of selectedPieceIds) {
+            const p = pieces.find(p => p.id === id);
+            if (p) {
+                let newCol = snapMagnet(p.col + deltaCol, magnetEnabled);
+                let newRow = p.row + deltaRow;
+                if (newCol < 0) newCol = 0;
+                if (newRow < 0) newRow = 0;
+                if (newRow >= ROWS) newRow = ROWS-1;
+                p.col = newCol;
+                p.row = newRow;
+            }
+        }
+        updateMaxBeats();
+    });
+    drawGridAndPieces();
+}
+    function selectAllPieces() {
+        if (selectedInstId !== null) {
+            selectedPieceIds = pieces.filter(p => p.instId === selectedInstId).map(p => p.id);
+            drawGridAndPieces();
+            updateSelectionBadge();
+            document.getElementById("statusMsg").innerText = `${selectedPieceIds.length}個のピースを選択`;
+        }
+    }
+
+    // 追加: 時間表示用ヘルパー関数
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toFixed(2).padStart(5, '0')}`;
+    }
+    function updateTimeDisplay() {
+        const totalSeconds = (BEATS * 60) / currentBPM;
+        const currentSeconds = (currentPlayheadBeat * 60) / currentBPM;
+        const timeDisplay = document.getElementById("timeDisplay");
+        if (timeDisplay) {
+            timeDisplay.innerText = `${formatTime(currentSeconds)} / ${formatTime(totalSeconds)}`;
+        }
+    }
+
+    // drawGridAndPieces に時間目盛りを追加 (元の関数を上書き)
+    const originalDrawGridAndPieces = drawGridAndPieces;
+    drawGridAndPieces = function() {
+        originalDrawGridAndPieces();
+        // 追加: グリッドの下に時間表示
+        if (!ctx) return;
+        ctx.save();
+        ctx.font = "10px monospace";
+        ctx.fillStyle = "#aaaaaa";
+        const yPos = canvas.height + 12;
+        for (let c = 0; c <= BEATS; c++) {
+            const x = beatsToPx(c);
+            const beatTime = (c * 60) / currentBPM;
+            const timeStr = beatTime.toFixed(1) + "s";
+            ctx.fillText(timeStr, x + 2, yPos);
+        }
+        ctx.restore();
+    };
+
+    // 元の drawGridAndPieces を置き換えるため、変数を再定義
+    // ただし、既に drawGridAndPieces は関数として宣言されているので、上書きは問題ない。
+
+    function drawGridAndPieces() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = "#4a4a6a";
+        ctx.lineWidth = 0.5;
+        for (let r = 0; r <= ROWS; r++) { ctx.beginPath(); ctx.moveTo(0, r*ROW_H); ctx.lineTo(canvas.width, r*ROW_H); ctx.stroke(); }
+        for (let c = 0; c <= BEATS; c++) { let x = beatsToPx(c); ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
+        ctx.font = "12px monospace"; ctx.fillStyle = "#ffb347";
+        for (let r = 0; r < ROWS; r++) ctx.fillText(NOTE_NAMES[r], 4, r*ROW_H+ROW_H-12);
+        if (selectedInstId !== null) {
+            const instPieces = pieces.filter(p => p.instId === selectedInstId);
+            for (let piece of instPieces) {
+                let x = beatsToPx(piece.col), y = rowsToPx(piece.row), w = beatsToPx(piece.length), h = ROW_H-2;
+                if (w < 1) w = 1;
+                const isSelected = selectedPieceIds.includes(piece.id);
+                ctx.fillStyle = isSelected ? "#5a9effcc" : "#f0a35ecc";
+                ctx.fillRect(x+1, y+1, w-1, h);
+                ctx.strokeStyle = "white";
+                ctx.strokeRect(x+1, y+1, w-1, h);
+                ctx.fillStyle = piece.stretchMode ? "#88aaff" : "#aaffaa";
+                ctx.font = "10px monospace";
+                ctx.fillText(piece.stretchMode ? "⚡" : "◯", x+4, y+ROW_H-10);
+                if ((piece.startOffset && piece.startOffset > 0.01) || (piece.endOffset !== undefined && piece.endOffset < (instruments.find(i=>i.id===piece.instId)?.sampleDuration || 0))) {
+                    ctx.fillStyle = "#ffaa88";
+                    ctx.fillText("✂", x+12, y+ROW_H-10);
+                }
+                if (isSelected) {
+                    ctx.save(); ctx.strokeStyle = "#33aaff"; ctx.lineWidth = 2;
+                    ctx.strokeRect(x+1, y+1, w-1, h); ctx.restore();
+                }
+            }
+        }
+        if (dragState.pieceId) {
+            const piece = pieces.find(p => p.id === dragState.pieceId);
+            if (piece && piece.instId === selectedInstId) {
+                let x = beatsToPx(piece.col), y = rowsToPx(piece.row), w = beatsToPx(piece.length);
+                ctx.save(); ctx.strokeStyle = "yellow"; ctx.lineWidth = 2;
+                ctx.strokeRect(x+1, y+1, w-1, ROW_H-2); ctx.restore();
+            }
+        }
+        // 追加: グリッドの下に時間表示
+        ctx.save();
+        ctx.font = "10px monospace";
+        ctx.fillStyle = "#aaaaaa";
+        const yPos = canvas.height + 12;
+        for (let c = 0; c <= BEATS; c++) {
+            const x = beatsToPx(c);
+            const beatTime = (c * 60) / currentBPM;
+            const timeStr = beatTime.toFixed(1) + "s";
+            ctx.fillText(timeStr, x + 2, yPos);
+        }
+        ctx.restore();
+    }
+    // ※ 元の drawGridAndPieces を完全に置き換えたので、以降のコードで参照される新しい関数になる。
+
+    function findPieceAt(mouseX, mouseY) {
+        if (selectedInstId === null) return null;
+        const beat = pxToBeats(mouseX);
+        const row = pxToRow(mouseY);
+        if (row < 0 || row >= ROWS) return null;
+        const instPieces = pieces.filter(p => p.instId === selectedInstId);
+        for (let i = instPieces.length-1; i >= 0; i--) {
+            const p = instPieces[i];
+            if (p.row === row && beat >= p.col && beat < p.col + p.length) return p;
+        }
+        return null;
+    }
+
+    function updateMouseCursor(e) {
+        if (dragState.active) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        let mouseX = (e.clientX - rect.left) * scaleX;
+        let mouseY = (e.clientY - rect.top) * scaleY;
+        const piece = findPieceAt(mouseX, mouseY);
+        if (!piece) {
+            canvas.style.cursor = "crosshair";
+            return;
+        }
+        const pieceLeft = beatsToPx(piece.col);
+        const pieceRight = beatsToPx(piece.col + piece.length);
+        if (Math.abs(mouseX - pieceLeft) < RESIZE_THRESHOLD || Math.abs(mouseX - pieceRight) < RESIZE_THRESHOLD) {
+            canvas.style.cursor = "ew-resize";
+        } else {
+            canvas.style.cursor = "grab";
+        }
+    }
+
+    function onCanvasMouseDown(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        let mouseX = (e.clientX - rect.left) * scaleX;
+        let mouseY = (e.clientY - rect.top) * scaleY;
+        const piece = findPieceAt(mouseX, mouseY);
+        if (e.button === 2) {
+            e.preventDefault();
+            if (piece) {
+                if (!selectedPieceIds.includes(piece.id)) { selectedPieceIds = [piece.id]; drawGridAndPieces(); updateSelectionBadge(); }
+                // ★ 修正: snapBeat → snapMagnet (貼り付け位置用), snapDivision (分割用)
+                lastContextMenuMousePos = { beat: snapMagnet(pxToBeats(mouseX), magnetEnabled), row: pxToRow(mouseY) };
+                splitTargetPiece = { pieceId: piece.id, splitBeat: snapDivision(pxToBeats(mouseX)) };
+                showContextMenu(e.clientX, e.clientY);
+            } else {
+                lastContextMenuMousePos = { beat: snapMagnet(pxToBeats(mouseX), magnetEnabled), row: pxToRow(mouseY) };
+                showEmptyContextMenu(e.clientX, e.clientY);
+            }
+            return;
+        }
+        if (!piece) {
+            if (!selectedInstId) return;
+            if (selectedPieceIds.length > 1) {
+                document.getElementById("statusMsg").innerText = "複数選択中は新規ピースを作成できません (Escで解除)";
+                return;
+            }
+            let beat = snapMagnet(pxToBeats(mouseX), magnetEnabled);
+            let row = pxToRow(mouseY);
+            if (row>=0 && row<ROWS && beat>=0) {
+                withHistory(() => {
+                    addPiece(selectedInstId, row, beat, 1.0, false, 0, null);
+                });
+            }
+            return;
+        }
+        if (e.ctrlKey) {
+            if (selectedPieceIds.includes(piece.id)) selectedPieceIds = selectedPieceIds.filter(id => id !== piece.id);
+            else selectedPieceIds.push(piece.id);
+            drawGridAndPieces(); updateSelectionBadge();
+            return;
+        } else {
+            if (!selectedPieceIds.includes(piece.id)) { selectedPieceIds = [piece.id]; drawGridAndPieces(); updateSelectionBadge(); }
+        }
+        const pieceLeft = beatsToPx(piece.col);
+        const pieceRight = beatsToPx(piece.col + piece.length);
+        let dragType = null;
+        if (Math.abs(mouseX - pieceLeft) < RESIZE_THRESHOLD) dragType = "resize-left";
+        else if (Math.abs(mouseX - pieceRight) < RESIZE_THRESHOLD) dragType = "resize-right";
+        else dragType = "move";
+        dragState = {
+            active: true, type: dragType, pieceId: piece.id,
+            startMouseX: mouseX, startMouseY: mouseY,
+            originalCol: piece.col, originalLen: piece.length, originalRow: piece.row,
+            multiSelectMove: false, originalSelectedPieces: []
+        };
+        if (dragType === "move" && selectedPieceIds.length > 1) {
+            dragState.multiSelectMove = true;
+            dragState.originalSelectedPieces = selectedPieceIds.map(id => {
+                const p = pieces.find(p => p.id === id);
+                return p ? { id, col: p.col, row: p.row } : null;
+            }).filter(v => v);
+        }
+        drawGridAndPieces();
+    }
+
+    function onCanvasMouseMove(e) {
+    updateMouseCursor(e);
+    if (!dragState.active) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    let mouseX = (e.clientX - rect.left) * scaleX;
+    let mouseY = (e.clientY - rect.top) * scaleY;
+    const piece = pieces.find(p => p.id === dragState.pieceId);
+    if (!piece) { dragState.active = false; return; }
+    const inst = instruments.find(i => i.id === piece.instId);
+    if (!inst) { dragState.active = false; return; }
+    let deltaBeats = pxToBeats(mouseX - dragState.startMouseX);
+    if (magnetEnabled) deltaBeats = Math.round(deltaBeats);
+
+    if (dragState.type === "move") {
+        if (dragState.multiSelectMove && dragState.originalSelectedPieces.length) {
+            for (let orig of dragState.originalSelectedPieces) {
+                const p = pieces.find(p => p.id === orig.id);
+                if (p) {
+                    let newCol = snapMagnet(orig.col + deltaBeats, magnetEnabled);
+                    if (newCol < 0) newCol = 0;
+                    p.col = newCol;
+                    let deltaRow = Math.round((mouseY - dragState.startMouseY) / ROW_H);
+                    let newRow = orig.row + deltaRow;
+                    newRow = Math.min(Math.max(0, newRow), ROWS-1);
+                    p.row = newRow;
+                }
+            }
+        } else {
+            let newCol = dragState.originalCol + deltaBeats;
+            if (magnetEnabled) newCol = Math.round(newCol);
+            if (newCol < 0) newCol = 0;
+            piece.col = newCol;
+            let deltaRow = Math.round((mouseY - dragState.startMouseY) / ROW_H);
+            let newRow = dragState.originalRow + deltaRow;
+            newRow = Math.min(Math.max(0, newRow), ROWS-1);
+            piece.row = newRow;
+        }
+    } else if (dragState.type === "resize-right") {
+        let newLen = dragState.originalLen + deltaBeats;
+        if (magnetEnabled) newLen = Math.round(newLen);
+        if (newLen < 0.1) newLen = 0.1;
+        const oldLenSec = (dragState.originalLen * 60) / currentBPM;
+        const newLenSec = (newLen * 60) / currentBPM;
+        const oldEndOffset = piece.endOffset ?? inst.sampleDuration;
+        const newEndOffset = Math.min(inst.sampleDuration, (piece.startOffset ?? 0) + (oldEndOffset - (piece.startOffset ?? 0)) * (newLenSec / oldLenSec));
+        piece.endOffset = newEndOffset;
+        piece.length = newLen;
+    } else if (dragState.type === "resize-left") {
+        let newStart = dragState.originalCol + deltaBeats;
+        if (magnetEnabled) newStart = Math.round(newStart);
+        if (newStart < 0) newStart = 0;
+        let newEnd = dragState.originalCol + dragState.originalLen;
+        if (newStart >= newEnd) newStart = newEnd - 0.1;
+        const oldStartOffset = piece.startOffset ?? 0;
+        const sourceDuration = (piece.endOffset ?? inst.sampleDuration) - oldStartOffset;
+        const ratio = (dragState.originalCol - newStart) / dragState.originalLen;
+        const deltaOffsetSec = sourceDuration * ratio;
+        let newStartOffset = oldStartOffset + deltaOffsetSec;
+        newStartOffset = Math.max(0, Math.min(newStartOffset, piece.endOffset ?? inst.sampleDuration - 0.01));
+        piece.startOffset = newStartOffset;
+        piece.col = newStart;
+        piece.length = newEnd - newStart;
+    }
+    updateMaxBeats();
+    drawGridAndPieces();
+}
+
+    function onCanvasMouseUp() {
+        if (dragState.active) saveToHistory();
+        dragState.active = false;
+        drawGridAndPieces();
+    }
+
+    function showContextMenu(x, y) {
+        const old = document.getElementById("customMenu");
+        if (old) old.remove();
+        const menu = document.createElement("div");
+        menu.id = "customMenu";
+        menu.style.position = "fixed"; menu.style.left = x + "px"; menu.style.top = y + "px";
+        menu.style.backgroundColor = "#2a2a3a"; menu.style.borderRadius = "12px"; menu.style.padding = "8px"; menu.style.zIndex = 1000;
+        let menuHtml = `<div data-action="delete">🗑️ 削除 (${selectedPieceIds.length}個)</div>
+                        <div data-action="copy">📋 コピー (${selectedPieceIds.length}個)</div>
+                        <div data-action="stretch">🔄 伸び切替 (${selectedPieceIds.length}個)</div>
+                        <div data-action="split">✂ 分割</div>
+                        <hr style="margin:4px 0;"><div data-action="paste">📌 貼り付け</div>`;
+        menu.innerHTML = menuHtml;
+        document.body.appendChild(menu);
+        menu.querySelectorAll("[data-action]").forEach(el => {
+            el.addEventListener("click", () => {
+                const action = el.dataset.action;
+                if (action === "delete") { withHistory(() => deletePieces(selectedPieceIds)); }
+                else if (action === "copy") copyPieces(selectedPieceIds);
+                else if (action === "stretch") toggleStretchMode(selectedPieceIds);
+                else if (action === "split") {
+                    if (splitTargetPiece) splitPiece(splitTargetPiece.pieceId, splitTargetPiece.splitBeat);
+                }
+                else if (action === "paste") pastePieces(lastContextMenuMousePos.beat, lastContextMenuMousePos.row);
+                menu.remove();
+            });
+        });
+        setTimeout(() => document.addEventListener("click", () => menu.remove(), { once: true }), 10);
+    }
+    function showEmptyContextMenu(x, y) {
+        const old = document.getElementById("customMenu");
+        if (old) old.remove();
+        const menu = document.createElement("div");
+        menu.id = "customMenu";
+        menu.style.position = "fixed"; menu.style.left = x + "px"; menu.style.top = y + "px";
+        menu.style.backgroundColor = "#2a2a3a"; menu.style.borderRadius = "12px"; menu.style.padding = "8px"; menu.style.zIndex = 1000;
+        menu.innerHTML = `<div data-action="paste">📌 貼り付け</div>`;
+        document.body.appendChild(menu);
+        menu.querySelector("[data-action='paste']").addEventListener("click", () => {
+            pastePieces(lastContextMenuMousePos.beat, lastContextMenuMousePos.row);
+            menu.remove();
+        });
+        setTimeout(() => document.addEventListener("click", () => menu.remove(), { once: true }), 10);
+    }
+
+    function updatePlayheadPosition() {
+        if (!playheadDiv) return;
+        let x = beatsToPx(currentPlayheadBeat);
+        playheadDiv.style.left = x + 'px';
+        playheadDiv.style.height = canvas.height + 'px';
+        const container = gridContainerDiv;
+        const scrollLeft = container.scrollLeft;
+        const viewRight = scrollLeft + container.clientWidth;
+        if (x < scrollLeft + 30) container.scrollLeft = Math.max(0, x - 30);
+        else if (x > viewRight - 30) container.scrollLeft = x + 30 - container.clientWidth;
+        // 追加: 時間表示更新
+        updateTimeDisplay();
+    }
+    function initPlayheadDrag() {
+        let drag = false;
+        playheadDiv.style.pointerEvents = "auto";
+        playheadDiv.addEventListener("mousedown", (e) => {
+            if (isPlaying) stopPlayback();
+            drag = true;
+            e.preventDefault();
+        });
+        window.addEventListener("mousemove", (e) => {
+            if (!drag) return;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            let mouseX = (e.clientX - rect.left) * scaleX;
+            let beat = pxToBeats(mouseX);
+            if (beat < 0) beat = 0;
+            if (beat > BEATS) beat = BEATS;
+            currentPlayheadBeat = beat;
+            updatePlayheadPosition();
+        });
+        window.addEventListener("mouseup", () => { drag = false; });
+    }
+    function stopPlayback() {
+        if (isPlaying) {
+            for (let src of scheduledSources) try { src.stop(); } catch(e) {}
+            scheduledSources = [];
+            // 追加: アクティブなソースリストをクリア
+            activePlaybackSources = [];
+            isPlaying = false;
+            if (animationFrame) cancelAnimationFrame(animationFrame);
+            document.getElementById("statusMsg").innerText = "停止";
+            updateTimeDisplay(); // 停止時も更新
+        }
+    }
+    async function playPattern() {
+        if (isPlaying) { stopPlayback(); return; }
+        if (!audioCtx) initAudio();
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
+        isPlaying = true;
+        scheduledSources = [];
+        activePlaybackSources = []; // 再開時にクリア
+        const startTime = audioCtx.currentTime;
+        const startBeat = currentPlayheadBeat;
+        for (let piece of pieces) {
+            const inst = instruments.find(i => i.id === piece.instId);
+            if (!inst || !inst.buffer) continue;
+            if (inst.mute) continue;
+            if (instruments.some(i => i.solo) && !inst.solo) continue;
+            const info = getPieceStartInfo(piece, inst, startBeat);
+            if (!info) continue;
+            const src = audioCtx.createBufferSource();
+            src.buffer = inst.buffer;
+            src.playbackRate.value = getPlaybackRate(piece, inst);
+            const gain = audioCtx.createGain();
+            // 初期ゲインはinst.volume / 100 とするが、後で updateAllActiveGains で再計算する
+            gain.gain.value = inst.volume / 100;
+            src.connect(gain);
+            gain.connect(audioCtx.destination);
+            src.start(startTime + info.startTimeSec, info.offsetWithinPiece);
+            const totalDur = getPieceTotalDuration(piece, inst);
+            const elapsedInPiece = info.offsetWithinPiece - (piece.startOffset ?? 0);
+            const remaining = totalDur - elapsedInPiece;
+            if (remaining > 0) src.stop(startTime + info.startTimeSec + remaining);
+            scheduledSources.push(src);
+            // 追加: アクティブリストに記録
+            activePlaybackSources.push({ src, gainNode: gain, instId: piece.instId, pieceId: piece.id, bgm: false });
+        }
+        if (bgmPiece && bgmPiece.buffer && !bgmPiece.mute) {
+            const bgmStartSec = - (startBeat * 60 / currentBPM);
+            const src = audioCtx.createBufferSource();
+            src.buffer = bgmPiece.buffer;
+            const gain = audioCtx.createGain();
+            gain.gain.value = (bgmPiece.volume || 80) / 100;
+            src.connect(gain);
+            gain.connect(audioCtx.destination);
+            if (bgmStartSec < 0) src.start(startTime, -bgmStartSec);
+            else src.start(startTime + bgmStartSec);
+            scheduledSources.push(src);
+            activePlaybackSources.push({ src, gainNode: gain, instId: null, pieceId: null, bgm: true });
+        }
+        // 追加: 現在のミュート/ソロ状態を適用
+        updateAllActiveGains();
+        function animatePlayhead() {
+            if (!isPlaying || !audioCtx) return;
+            const elapsed = audioCtx.currentTime - startTime;
+            currentPlayheadBeat = startBeat + elapsed * currentBPM / 60;
+            if (currentPlayheadBeat > BEATS) currentPlayheadBeat = BEATS;
+            updatePlayheadPosition();
+            if (isPlaying) animationFrame = requestAnimationFrame(animatePlayhead);
+        }
+        animatePlayhead();
+        document.getElementById("statusMsg").innerText = "再生中...";
+    }
+
+    async function exportWavInternal(includeBgm) {
+        if (instruments.length === 0 && (!includeBgm || !bgmPiece?.buffer)) { alert("音素材がありません"); return; }
+        initAudio();
+        const sampleRate = 44100;
+        let maxDur = 0;
+        for (let p of pieces) {
+            let end = (p.col + p.length) * 60 / currentBPM;
+            if (end > maxDur) maxDur = end;
+        }
+        if (includeBgm && bgmPiece?.buffer) {
+            let bgmDur = bgmPiece.buffer.duration;
+            if (bgmDur > maxDur) maxDur = bgmDur;
+        }
+        maxDur = Math.ceil(maxDur) + 2;
+        const offlineCtx = new OfflineAudioContext({ numberOfChannels: 2, length: sampleRate * maxDur, sampleRate });
+        const master = offlineCtx.createGain();
+        master.connect(offlineCtx.destination);
+        for (let piece of pieces) {
+            const inst = instruments.find(i => i.id === piece.instId);
+            if (!inst || !inst.buffer) continue;
+            if (inst.mute) continue;
+            if (instruments.some(i => i.solo) && !inst.solo) continue;
+            const startSec = (piece.col * 60) / currentBPM;
+            const src = offlineCtx.createBufferSource();
+            src.buffer = inst.buffer;
+            src.playbackRate.value = getPlaybackRate(piece, inst);
+            const gain = offlineCtx.createGain();
+            gain.gain.value = inst.volume / 100;
+            src.connect(gain);
+            gain.connect(master);
+            const offset = piece.startOffset ?? 0;
+            src.start(startSec, offset);
+            const duration = getPieceTotalDuration(piece, inst);
+            src.stop(startSec + duration);
+        }
+        if (includeBgm && bgmPiece?.buffer && !bgmPiece.mute) {
+            const src = offlineCtx.createBufferSource();
+            src.buffer = bgmPiece.buffer;
+            const gain = offlineCtx.createGain();
+            gain.gain.value = (bgmPiece.volume || 80) / 100;
+            src.connect(gain);
+            gain.connect(master);
+            src.start(0);
+        }
+        const rendered = await offlineCtx.startRendering();
+        const wav = bufferToWav(rendered);
+        const blob = new Blob([wav], { type: "audio/wav" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${document.getElementById("projectName").value}${includeBgm ? "" : "_noBgm"}.wav`;
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("statusMsg").innerText = "WAV書き出し完了";
+    }
+
+    function bufferToWav(buffer) {
+        const numChannels = buffer.numberOfChannels;
+        const sampleRate = buffer.sampleRate;
+        const frameLength = buffer.length;
+        const dataLength = frameLength * numChannels * 2;
+        const buf = new ArrayBuffer(44 + dataLength);
+        const view = new DataView(buf);
+        function writeString(offset, str) {
+            for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+        }
+        writeString(0, 'RIFF');
+        view.setUint32(4, 36 + dataLength, true);
+        writeString(8, 'WAVE');
+        writeString(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * numChannels * 2, true);
+        view.setUint16(32, numChannels * 2, true);
+        view.setUint16(34, 16, true);
+        writeString(36, 'data');
+        view.setUint32(40, dataLength, true);
+        let offset = 44;
+        for (let i = 0; i < frameLength; i++) {
+            for (let ch = 0; ch < numChannels; ch++) {
+                let sample = buffer.getChannelData(ch)[i];
+                sample = Math.max(-1, Math.min(1, sample));
+                const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+                view.setInt16(offset, intSample, true);
+                offset += 2;
+            }
+        }
+        return buf;
+    }
+
+    function saveProject() {
+        const data = {
+            version:6, bpm:currentBPM, beats:BEATS,
+            instruments: instruments.map(i=>({id:i.id,name:i.name,pitchCents:i.pitchCents,volume:i.volume,mute:i.mute,solo:i.solo,sampleDuration:i.sampleDuration})),
+            pieces, bgmPiece: bgmPiece ? { name:bgmPiece.name, volume:bgmPiece.volume, mute:bgmPiece.mute, sampleDuration:bgmPiece.sampleDuration } : null,
+            nextIds:{nextInstId,nextPieceId}, selectedInstId, noteNames: NOTE_NAMES, rows:ROWS
+        };
+        const blob = new Blob([JSON.stringify(data)], {type:"application/json"});
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `${document.getElementById("projectName").value}.otomap`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        document.getElementById("statusMsg").innerText = "プロジェクトを保存しました";
+        saveToHistory();
+    }
+    function loadProject(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const data = JSON.parse(e.target.result);
+            currentBPM = data.bpm; BEATS = data.beats || 32;
+            if (data.noteNames && data.rows) {
+                NOTE_NAMES = data.noteNames;
+                ROWS = data.rows;
+            } else {
+                NOTE_NAMES = ["シ²","ラ#²","ラ²","ソ#²","ソ²","ファ#²","ファ²","ミ²","レ#²","レ²","ド#²","ド²","シ¹","ラ#¹","ラ¹","ソ#¹","ソ¹","ファ#¹","ファ¹","ミ¹","レ#¹","レ¹","ド#¹","ド¹"];
+                ROWS = 24;
+            }
+            document.getElementById("bpmInput").value = currentBPM;
+            instruments = data.instruments.map(i=>({...i, buffer:null}));
+            pieces = data.pieces;
+            if (data.bgmPiece) bgmPiece = { id:'bgm', ...data.bgmPiece, buffer:null };
+            nextInstId = data.nextIds.nextInstId;
+            nextPieceId = data.nextIds.nextPieceId;
+            selectedInstId = data.selectedInstId;
+            resizeCanvas();
+            renderInstrumentPanel();
+            drawGridAndPieces();
+            document.getElementById("statusMsg").innerText = "読み込み完了 (音素材は再読み込み必要)";
+            saveToHistory();
+        };
+        reader.readAsText(file);
+    }
+
+    function onKeyDown(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        const ctrl = e.ctrlKey;
+        const key = e.key;
+        if (ctrl && key === 's') { e.preventDefault(); saveProject(); return; }
+        if (ctrl && key === 'z') { e.preventDefault(); undo(); return; }
+        if (ctrl && key === 'y') { e.preventDefault(); redo(); return; }
+        if (ctrl && key === 'a') { e.preventDefault(); selectAllPieces(); return; }
+        if (key === 'Delete') { e.preventDefault(); if(selectedPieceIds.length) withHistory(() => deletePieces(selectedPieceIds)); return; }
+        if (key === ' ' || key === 'Space') { e.preventDefault(); playPattern(); return; }
+        if (key === 'Home') { e.preventDefault(); currentPlayheadBeat = 0; updatePlayheadPosition(); return; }
+        if (key === 'End') { e.preventDefault(); currentPlayheadBeat = BEATS; updatePlayheadPosition(); return; }
+        // 追加: 左右キーで再生バー移動
+        if (key === 'ArrowLeft') {
+            e.preventDefault();
+            let step = 1; // 1拍移動
+            if (ctrl) step = 0.25; // Ctrl+左右で細かい移動（オプション）
+            currentPlayheadBeat = Math.max(0, currentPlayheadBeat - step);
+            updatePlayheadPosition();
+        } else if (key === 'ArrowRight') {
+            e.preventDefault();
+            let step = 1;
+            if (ctrl) step = 0.25;
+            currentPlayheadBeat = Math.min(BEATS, currentPlayheadBeat + step);
+            updatePlayheadPosition();
+        }
+        const moveDelta = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -1, ArrowDown: 1 };
+        if (moveDelta[key]) {
+            e.preventDefault();
+            let deltaCol = 0, deltaRow = 0;
+            if (key === 'ArrowLeft') deltaCol = -1;
+            if (key === 'ArrowRight') deltaCol = 1;
+            if (key === 'ArrowUp') deltaRow = -1;
+            if (key === 'ArrowDown') deltaRow = 1;
+            moveSelectedPieces(deltaCol, deltaRow);
+        }
+        if (key === 'Escape') {
+            selectedPieceIds = [];
+            drawGridAndPieces();
+            updateSelectionBadge();
+            document.getElementById("statusMsg").innerText = "選択を解除しました";
+        }
+    }
+
+    function init() {
+        resizeCanvas();
+        canvas.addEventListener("mousedown", onCanvasMouseDown);
+        canvas.addEventListener("mousemove", onCanvasMouseMove);
+        canvas.addEventListener("mouseup", onCanvasMouseUp);
+        canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+        document.getElementById("bpmInput").addEventListener("input", (e) => { 
+            currentBPM = parseInt(e.target.value) || 120; 
+            updateTimeDisplay(); 
+            drawGridAndPieces(); 
+            // 追加: 再生中ならBPM変更をリアルタイム反映（停止→再開）
+            applyBPMChange();
+        }); 
+
+        const magnetBtn = document.getElementById("magnetToggle");
+        if (magnetBtn) {
+            const updateMagnetUI = () => {
+                magnetBtn.classList.toggle("active", magnetEnabled);
+                magnetBtn.innerText = magnetEnabled ? "🧲 磁石配置 ON" : "🧲 磁石配置 OFF";
+            };
+            updateMagnetUI();
+            magnetBtn.addEventListener("click", () => {
+                magnetEnabled = !magnetEnabled;
+                updateMagnetUI();
+            });
+        }
+
+        document.getElementById("playStopBtn").addEventListener("click", playPattern);
+        document.getElementById("exportWavBtn").addEventListener("click", () => exportWavInternal(true));
+        document.getElementById("exportWavNoBgmBtn").addEventListener("click", () => exportWavInternal(false));
+        document.getElementById("saveProjectBtn").addEventListener("click", saveProject);
+        document.getElementById("loadProjectBtn").addEventListener("click", () => document.getElementById("loadProjectFile").click());
+        document.getElementById("loadProjectFile").addEventListener("change", (e) => { if(e.target.files[0]) loadProject(e.target.files[0]); });
+        document.getElementById("addInstrumentBtn").addEventListener("click", () => { addInstrument("新しい楽器"); });
+        addInstrument("素材#1");
+        addInstrument("素材#2");
+        selectedInstId = instruments[0]?.id;
+        renderInstrumentPanel();
+        initPlayheadDrag();
+        window.addEventListener("keydown", onKeyDown);
+        saveToHistory();
+        updateTimeDisplay(); // 初期表示更新
+    }
+    function escapeHtml(str) { return str.replace(/[&<>]/g, m=>({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
+    init();
+
+    // アプリコンテキストをグローバルに公開（プラグインからアクセス可能）
+    window.appContext = {
+        instruments, pieces, bgmPiece, selectedInstId,
+        currentBPM, magnetEnabled, selectedPieceIds,
+        addInstrument, deleteInstrument, addPiece, deletePieces,
+        copyPieces, pastePieces, splitPiece, playPattern, stopPlayback,
+        exportWavInternal, saveProject, loadProject, undo, redo,
+        selectAllPieces, moveSelectedPieces
     };
 </script>
 </body>
