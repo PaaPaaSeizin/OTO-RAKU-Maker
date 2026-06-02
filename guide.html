@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>使い方ガイド | OTO-RAKU-Maker</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a0a12;
+            font-family: 'Segoe UI', 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+            color: #eee;
+        }
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding: 0 8px;
+        }
+        .app-header .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #f0a35e, #ffd966);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .back-btn {
+            background: #2e2e44;
+            border: none;
+            color: white;
+            border-radius: 32px;
+            padding: 6px 14px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-family: inherit;
+        }
+        .back-btn:hover {
+            background: #4a4a6a;
+        }
+        .guide-container {
+            background: #151520;
+            border-radius: 28px;
+            padding: 24px 28px;
+            border: 1px solid #2e2e44;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-top: 0;
+            margin-bottom: 32px;
+            color: #ffd966;
+            border-bottom: 2px solid #f0a35e;
+            display: inline-block;
+            padding-bottom: 6px;
+        }
+        .guide-section {
+            margin-bottom: 32px;
+        }
+        .guide-section h2 {
+            font-size: 1.4rem;
+            color: #f0a35e;
+            margin-bottom: 12px;
+            border-left: 4px solid #f0a35e;
+            padding-left: 12px;
+        }
+        .guide-content {
+            line-height: 1.6;
+            font-size: 0.95rem;
+            color: #ddd;
+            white-space: normal;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.75rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+<div class="app-header">
+    <div class="logo">🎵 OTO-RAKU-Maker</div>
+    <a href="index.html" class="back-btn">← 戻る</a>
+</div>
+<div class="guide-container">
+    <h1>使い方ガイド</h1>
+    
+                <div class="guide-section">
+                    <h2>全体概要</h2>
+                    <div class="guide-content">このアプリケーションは、ブラウザ上で動作する音MAD（音声素材を編集してBGMに合わせた動画を作る）制作環境です。主な特徴：<br><br>複数の楽器（トラック）を持ち、各楽器に音素材を割り当て可能<br><br>ピアノロール形式のグリッド（音マップ）に、ピースと呼ばれるブロックを配置して音符のタイミングと長さを指定<br><br>ピースはドラッグで移動、端をドラッグで長さ変更、右クリックでメニュー（削除、コピー、伸び切替）<br><br>BPMや音量、ピッチ調整、ミュート/ソロ、磁石機能（グリッドにスナップ）あり<br><br>プロジェクトの保存/読み込み（.otomap形式）、WAV書き出し（BGMあり/なし）<br><br>プラグインシステム（.jsファイルを動的に読み込んで機能拡張可能）<br><br>キーボードショートカット（Ctrl+Z/Y アンドゥ/リドゥ、Ctrl+C/V コピペ、Delete削除、Space再生/停止、Home/End 先頭/末尾、←→で再生ヘッド移動など）<br><br>履歴（Undo/Redo）機能（最大50ステップ）<br><br>以下、機能ごとに詳細説明。</div>
+                </div>
+            
+                <div class="guide-section">
+                    <h2>1. 楽器パネル（左サイドバー）</h2>
+                    <div class="guide-content">楽器の追加：「+ 楽器を追加」ボタンで新しい楽器を作成。IDは自動採番。<br><br>楽器カード：各楽器は以下のコントロールを持つ<br><br>楽器名の編集（テキストフィールド）<br><br>音量スライダー（0～100）<br><br>ピッチ調整スライダー（-200～200セント）。中央が0（調整なし）。ドの音に近づくとUIのバー色が変わる（実装あり？要確認）。<br><br>MUTEボタン：その楽器をミュート<br><br>SOLOボタン：その楽器だけを再生（他はミュート）<br><br>ファイル選択（音素材の読み込み：WAV/MP3）<br><br>テスト再生ボタン：現在のピッチで素材を再生（連打防止トグル式）<br><br>楽器の選択：楽器カードをクリックすると選択状態（ハイライト）になり、その楽器のピースだけが右の音マップに表示される。<br><br>楽器の削除：ゴミ箱ボタンで楽器とそれに属する全てのピースを削除（履歴対象）。</div>
+                </div>
+            
+                <div class="guide-section">
+                    <h2>2. BGMトラック</h2>
+                    <div class="guide-content">左パネルの下部にBGMトラック専用セクションあり。<br><br>BGM用の音素材を読み込み、音量調整、ミュート、テスト再生が可能。<br><br>プロジェクト保存・WAV書き出し時にBGMを含める/含めない選択ができる（ツールバーに「WAV書き出し (BGMオフ)」ボタンあり）。</div>
+                </div>
+            
+                <div class="guide-section">
+                    <h2>3. 音マップ（メイングリッド）</h2>
+                    <div class="guide-content">縦軸：音階（ド～シの2オクターブ、24音階、日本語表記）。一番下が低音（ド¹）、一番上が高音（シ²）。MIDIファイル読み込み時の拡張機能で72音階にも対応可能（別途プラグイン）。<br><br>横軸：時間方向のグリッド。初期32拍（BEATS=32）、ピースを置くにつれて自動拡張。<br><br>ピース：各楽器の音素材の断片。グリッドセルに矩形として描画。<br><br>色：選択中の楽器のピースだけ表示。選択されているピースは青系、通常はオレンジ系。<br><br>マーク：伸び切替モードが速度変更なら「⚡」、元の長さなら「◯」。<br><br>分割されたピースには「✂」マーク（startOffset/endOffsetを持つピース）<br><br></div>
+                </div>
+            
+                <div class="guide-section">
+                    <h2>操作</h2>
+                    <div class="guide-content">グリッドをクリック：選択中の楽器で長さ1のピースを作成（磁石ONなら整数拍にスナップ、OFFなら64分精度で自由位置）。<br><br>Ctrl+クリック：複数選択のトグル。<br><br>ピース上で左クリック（Ctrlなし）：そのピースだけを選択状態に。<br><br>ピースの中央をドラッグ：移動（磁石ONなら整数拍、OFFなら64分精度で自由移動）。縦方向も移動可能。<br><br>ピースの左右端をドラッグ：長さ変更（リサイズ）。端の検出閾値は20ピクセル。磁石ONなら整数拍スナップ。<br><br>右クリック：選択されている全てのピースに対するコンテキストメニューを表示（削除、コピー、伸び切替、分割、貼り付け）。分割は常に64分音符単位で正確にカット。<br><br>磁石機能：ツールバーの「🧲 磁石 (64分) ON」ボタンでON/OFF切り替え。ON時はピースの移動・新規作成・リサイズが整数拍（4分音符単位）でスナップ。分割は常に64分精度（磁石の影響を受けない）。</div>
+                </div>
+            
+                <div class="guide-section">
+                    <h2>4. ツールバー（上部）</h2>
+                    <div class="guide-content">BPM入力（数値）<br><br>磁石トグル（前述）<br><br>再生/停止ボタン（スペースキーでも可）<br><br>WAV書き出し（全トラック＋BGMをまとめたWAVをダウンロード）<br><br>WAV書き出し (BGMオフ)<br><br>プロジェクト保存（.otomapファイルとしてJSON保存）<br><br>読み込み（.otomapファイルを選択して復元）<br><br>選択バッジ（複数選択時に選択個数を表示）<br><br>時間表示（現在の再生位置/全体長さ、mm:ss.xx形式）</div>
+                </div>
+            
+                <div class="guide-section">
+                    <h2>5. ピースの詳細機能</h2>
+                    <div class="guide-content">伸び切替：右クリックメニューから「伸び切替」を選択すると、そのピースのモードが切り替わる。<br><br>速度変更モード：ピースの長さに合わせて素材の再生速度を変更（ピッチも変わる）。<br><br>元の長さモード：素材本来の長さで再生。ピースの長さはあくまで範囲指定（短ければ途中で切れ、長ければ無音部分が続く）。デフォルトはこのモード。<br><br>分割：ピースを任意の拍位置で2つに分割。分割点は常に64分音符単位でスナップし、分割後の両ピースは元の素材内の開始オフセットと終了オフセットを持つ。これにより、分割後の再生範囲が正確。<br><br>コピー＆ペースト：ピースを右クリック→コピー、その後どこかで右クリック→貼り付け。貼り付け時はマウスカーソルの位置（磁石ONなら整数拍スナップ）に貼り付けられ、貼り付けたピースは自動的に選択状態になる。<br><br>複数選択：Ctrl+クリックで複数ピースを選択。選択状態のピースは青枠で表示。まとめて移動（ドラッグ）、削除、コピー、伸び切替が可能。</div>
+                </div>
+            
+                <div class="guide-section">
+                    <h2>6. 再生/停止とタイムライン</h2>
+                    <div class="guide-content">再生ヘッド（赤い縦線）が現在の再生位置を示す。<br><br>再生ヘッドはドラッグで移動可能（再生中は停止する）。<br><br>キーボードの←→キーで再生ヘッドを1拍移動（Ctrl同時押しで0.25拍移動）。<br><br>Homeキーで先頭（0拍）、Endキーで末尾。<br><br>再生中はヘッドが自動進行し、時間表示も更新。<br><br>再生開始位置は現在のヘッド位置からスタート（途中からの再生が可能）。<br><br>停止時はヘッド位置がそのまま残る。</div>
+                </div>
+            
+                <div class="guide-section">
+                    <h2>7. 履歴（Undo/Redo）</h2>
+                    <div class="guide-content"><br>まず、このHTMLは音MAD制作ツール「OTO-RAKU-Maker」の完成版です。非常に長いコードですが、主要な機能をまとめます。要点を箇条書きで整理し、その後各機能の詳細を説明します。ユーザーが求めたのは「すべて説明して」なので、丁寧に解説します。<br><br>全体概要<br>このアプリケーションは、ブラウザ上で動作する音MAD（音声素材を編集してBGMに合わせた動画を作る）制作環境です。主な特徴：<br><br>複数の楽器（トラック）を持ち、各楽器に音素材を割り当て可能<br><br>ピアノロール形式のグリッド（音マップ）に、ピースと呼ばれるブロックを配置して音符のタイミングと長さを指定<br><br>ピースはドラッグで移動、端をドラッグで長さ変更、右クリックでメニュー（削除、コピー、伸び切替）<br><br>BPMや音量、ピッチ調整、ミュート/ソロ、磁石機能（グリッドにスナップ）あり<br><br>プロジェクトの保存/読み込み（.otomap形式）、WAV書き出し（BGMあり/なし）<br><br>プラグインシステム（.jsファイルを動的に読み込んで機能拡張可能）<br><br>キーボードショートカット（Ctrl+Z/Y アンドゥ/リドゥ、Ctrl+C/V コピペ、Delete削除、Space再生/停止、Home/End 先頭/末尾、←→で再生ヘッド移動など）<br><br>履歴（Undo/Redo）機能（最大50ステップ）<br><br>以下、機能ごとに詳細説明。<br><br>1. 楽器パネル（左サイドバー）<br>楽器の追加：「+ 楽器を追加」ボタンで新しい楽器を作成。IDは自動採番。<br><br>楽器カード：各楽器は以下のコントロールを持つ<br><br>楽器名の編集（テキストフィールド）<br><br>音量スライダー（0～100）<br><br>ピッチ調整スライダー（-200～200セント）。中央が0（調整なし）。ドの音に近づくとUIのバー色が変わる（実装あり？要確認）。<br><br>MUTEボタン：その楽器をミュート<br><br>SOLOボタン：その楽器だけを再生（他はミュート）<br><br>ファイル選択（音素材の読み込み：WAV/MP3）<br><br>テスト再生ボタン：現在のピッチで素材を再生（連打防止トグル式）<br><br>楽器の選択：楽器カードをクリックすると選択状態（ハイライト）になり、その楽器のピースだけが右の音マップに表示される。<br><br>楽器の削除：ゴミ箱ボタンで楽器とそれに属する全てのピースを削除（履歴対象）。<br><br>2. BGMトラック<br>左パネルの下部にBGMトラック専用セクションあり。<br><br>BGM用の音素材を読み込み、音量調整、ミュート、テスト再生が可能。<br><br>プロジェクト保存・WAV書き出し時にBGMを含める/含めない選択ができる（ツールバーに「WAV書き出し (BGMオフ)」ボタンあり）。<br><br>3. 音マップ（メイングリッド）<br>縦軸：音階（ド～シの2オクターブ、24音階、日本語表記）。一番下が低音（ド¹）、一番上が高音（シ²）。MIDIファイル読み込み時の拡張機能で72音階にも対応可能（別途プラグイン）。<br><br>横軸：時間方向のグリッド。初期32拍（BEATS=32）、ピースを置くにつれて自動拡張。<br><br>ピース：各楽器の音素材の断片。グリッドセルに矩形として描画。<br><br>色：選択中の楽器のピースだけ表示。選択されているピースは青系、通常はオレンジ系。<br><br>マーク：伸び切替モードが速度変更なら「⚡」、元の長さなら「◯」。<br><br>分割されたピースには「✂」マーク（startOffset/endOffsetを持つピース）<br><br>操作<br><br>グリッドをクリック：選択中の楽器で長さ1のピースを作成（磁石ONなら整数拍にスナップ、OFFなら64分精度で自由位置）。<br><br>Ctrl+クリック：複数選択のトグル。<br><br>ピース上で左クリック（Ctrlなし）：そのピースだけを選択状態に。<br><br>ピースの中央をドラッグ：移動（磁石ONなら整数拍、OFFなら64分精度で自由移動）。縦方向も移動可能。<br><br>ピースの左右端をドラッグ：長さ変更（リサイズ）。端の検出閾値は20ピクセル。磁石ONなら整数拍スナップ。<br><br>右クリック：選択されている全てのピースに対するコンテキストメニューを表示（削除、コピー、伸び切替、分割、貼り付け）。分割は常に64分音符単位で正確にカット。<br><br>磁石機能：ツールバーの「🧲 磁石 (64分) ON」ボタンでON/OFF切り替え。ON時はピースの移動・新規作成・リサイズが整数拍（4分音符単位）でスナップ。分割は常に64分精度（磁石の影響を受けない）。<br><br>4. ツールバー（上部）<br>BPM入力（数値）<br><br>磁石トグル（前述）<br><br>再生/停止ボタン（スペースキーでも可）<br><br>WAV書き出し（全トラック＋BGMをまとめたWAVをダウンロード）<br><br>WAV書き出し (BGMオフ)<br><br>プロジェクト保存（.otomapファイルとしてJSON保存）<br><br>読み込み（.otomapファイルを選択して復元）<br><br>選択バッジ（複数選択時に選択個数を表示）<br><br>時間表示（現在の再生位置/全体長さ、mm:ss.xx形式）<br><br>5. ピースの詳細機能<br>伸び切替：右クリックメニューから「伸び切替」を選択すると、そのピースのモードが切り替わる。<br><br>速度変更モード：ピースの長さに合わせて素材の再生速度を変更（ピッチも変わる）。<br><br>元の長さモード：素材本来の長さで再生。ピースの長さはあくまで範囲指定（短ければ途中で切れ、長ければ無音部分が続く）。デフォルトはこのモード。<br><br>分割：ピースを任意の拍位置で2つに分割。分割点は常に64分音符単位でスナップし、分割後の両ピースは元の素材内の開始オフセットと終了オフセットを持つ。これにより、分割後の再生範囲が正確。<br><br>コピー＆ペースト：ピースを右クリック→コピー、その後どこかで右クリック→貼り付け。貼り付け時はマウスカーソルの位置（磁石ONなら整数拍スナップ）に貼り付けられ、貼り付けたピースは自動的に選択状態になる。<br><br>複数選択：Ctrl+クリックで複数ピースを選択。選択状態のピースは青枠で表示。まとめて移動（ドラッグ）、削除、コピー、伸び切替が可能。<br><br>6. 再生/停止とタイムライン<br>再生ヘッド（赤い縦線）が現在の再生位置を示す。<br><br>再生ヘッドはドラッグで移動可能（再生中は停止する）。<br><br>キーボードの←→キーで再生ヘッドを1拍移動（Ctrl同時押しで0.25拍移動）。<br><br>Homeキーで先頭（0拍）、Endキーで末尾。<br><br>再生中はヘッドが自動進行し、時間表示も更新。<br><br>再生開始位置は現在のヘッド位置からスタート（途中からの再生が可能）。<br><br>停止時はヘッド位置がそのまま残る。<br><br>7. 履歴（Undo/Redo）<br>主要な操作（ピース追加、削除、移動、リサイズ、分割、貼り付け、楽器の追加/削除など）は履歴に保存。<br><br>Ctrl+Zで元に戻す、Ctrl+Yでやり直し。<br><br>履歴数は最大50ステップ。</div>
+                </div>
+            
+                <div class="guide-section">
+                    <h2>8. プロジェクトの保存と読み込み</h2>
+                    <div class="guide-content">保存：現在のプロジェクト（BPM、楽器構成、ピース配置、選択状態など）をJSON形式で.otomapファイルとしてダウンロード。音素材のバイナリは保存しない（ファイルパスではなくbufferオブジェクトは保存されないため、再読み込み時は音素材の再アップロードが必要）。<br><br>読み込み：.otomapファイルを選択すると、楽器リストとピースデータなどが復元される。音素材は別途読み込む必要がある。<br><br></div>
+                </div>
+            
+                <div class="guide-section">
+                    <h2>9. WAV書き出し</h2>
+                    <div class="guide-content">OfflineAudioContextを使用して全楽器のピースとBGMをミックスし、44.1kHzステレオWAVファイルを生成。<br><br>ピースの元の長さモードでは素材本来の長さに従い、速度変更モードではピース長に合わせて再生レートを変更して書き出し。<br><br>BGMを含める場合と含めない場合の2種類。</div>
+                </div>
+            
+                <div class="guide-section">
+                    <h2>10. プラグインシステム</h2>
+                    <div class="guide-content">ヘッダーの「プラグイン管理」ボタンでモーダルを開く。<br><br>登録済みプラグインの一覧表示、削除、設定（プラグインが提供するUI）が可能。<br><br>「JSファイルから追加」ボタンで.jsファイルを選択して動的に読み込む。<br><br>プラグインはグローバルオブジェクトwindow.OTOPLUGIN.registerPluginを使って登録。manifestにname, version, setup, destroy, settingsUIを含む。<br><br>サンプルとして「使い方ガイド」プラグインが内蔵。ツールバーに「📖使い方」ボタンを追加する（YouTubeの楽曲に飛ぶ）。</div>
+                </div>
+            
+                <div class="guide-section">
+                    <h2>11. キーボードショートカット一覧</h2>
+                    <div class="guide-content">Ctrl+S: プロジェクト保存<br><br>Ctrl+Z: Undo<br><br>Ctrl+Y: Redo<br><br>Ctrl+A: 現在の楽器の全ピースを選択<br><br>Delete: 選択中のピースを削除<br><br>Space: 再生/停止<br><br>Home: 再生ヘッドを先頭へ<br><br>End: 再生ヘッドを末尾へ<br><br>← →: 再生ヘッドを左右へ移動（1拍）<br><br>Ctrl+← →: 0.25拍移動<br><br>Esc: 選択解除<br><br>（また、上下左右キーは選択中のピースを移動させる：ArrowUp/Downで音階移動、ArrowLeft/Rightで時間移動）</div>
+                </div>
+            
+                <div class="guide-section">
+                    <h2>12. その他のUI/UX</h2>
+                    <div class="guide-content">右クリックメニュー（ピース上、空き地）が表示される。<br><br>グリッドの下に各拍の秒数を表示。<br><br>キャンバス上のマウスカーソルは状況に応じて変化（crosshair, grab, ew-resize）。<br><br>ツールバーのボタンやメニューはダークテーマで統一。<br><br>ヘッダーにプロジェクト名入力、保存、読み込み、プラグイン管理ボタン。<br><br>技術的な補足<br>オーディオ処理はWeb Audio APIを使用。<br><br>ピースのstartOffsetとendOffsetで素材内の切り出し範囲を管理。分割やリサイズで適切に更新される。<br><br>タイミングの基本単位は「拍（beat）」。1拍 = 60 / BPM 秒。<br><br>磁石OFF時は64分音符（1/64拍）精度で浮動小数点位置を保持。<br><br>WAV書き出しのバッファ生成はbufferToWav関数で、全チャンネルを正しくインターリーブしている。<br><br>履歴の保存はsaveToHistory()、復元はrestoreState()。</div>
+                </div>
+            
+    <div class="footer">
+        © OTO-RAKU-Maker | PaaPaaSeizin(@_TOUKETUSINAIDE)
+    </div>
+</div>
+</body>
+</html>
