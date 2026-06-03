@@ -222,14 +222,14 @@
     
     // ========== プラグイン登録 ==========
     window.OTOPLUGIN.registerPlugin({
-        name: "MIDI to ORM importer (堅牢パーサー版)",
-        version: "2.2",
+        name: "MIDI to ORM importer",
+        version: "1.1",
         author: "OTO-RAKU-Official",
         settingsUI: () => {
             alert("MIDIファイルを読み込み、楽器とピースを自動生成します。\n読み込み時にピッチのオフセット（半音数）を指定できます。\n上下方向を修正し、低いMIDIノートが下の行に配置されるようになりました。\nまた、不正なMIDIファイルでも可能な限り読み込めるようパーサーを強化しました。");
         },
         setup: (doc, win, ctx) => {
-            console.log("MIDIインポータ起動 (堅牢パーサー版)");
+            console.log("MIDIインポータ起動");
             const toolbar = doc.querySelector(".toolbar");
             if (toolbar && !doc.getElementById("midiImportBtn")) {
                 const btn = doc.createElement("button");
