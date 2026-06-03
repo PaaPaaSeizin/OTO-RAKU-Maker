@@ -1,8 +1,8 @@
 // midi_to_otomap_plugin.js
-// OTO-RAKU-Maker MIDIインポートプラグイン (電子音オプション + 72音階拡張)
+// OTO-RAKU-Maker MIDIインポートプラグイン (堅牢パーサー版)
 
 (function() {
-    // ========== MIDIパーサー (変更なし) ==========
+    // ========== MIDIパーサー (堅牢版：未知のチャンクをスキップ、バッファオーバーラン防止) ==========
     function parseMidi(arrayBuffer) {
         const data = new Uint8Array(arrayBuffer);
         let pos = 0;
@@ -29,8 +29,10 @@
             return value;
         }
         
-        if (readUint32() !== 0x4D546864) throw new Error("Invalid MIDI file");
+        // MIDIヘッダーチェック
+        if (readUint32() !== 0x4D546864) throw new Error("Invalid MIDI file (MThd missing)");
         const headerLength = readUint32();
+        if (headerLength < 6) throw new Error("Invalid header length");
         const format = readUint16();
         const trackCount = readUint16();
         const division = readUint16();
@@ -38,40 +40,58 @@
         const useSMPTE = (division & 0x8000) !== 0;
         if (useSMPTE) throw new Error("SMPTE timing not supported");
         
+        // ヘッダーの残りがあればスキップ
+        if (headerLength > 6) pos += (headerLength - 6);
+        
         const tracks = [];
-        for (let t = 0; t < trackCount; t++) {
-            if (readUint32() !== 0x4D54726B) throw new Error("Invalid track header");
-            const trackLen = readUint32();
-            const endPos = pos + trackLen;
-            const events = [];
-            let currentTick = 0;
+        let tracksParsed = 0;
+        
+        // トラックを安全に読み込む (trackCount に依存せず、バッファの終端まで)
+        while (pos < data.length && tracksParsed < trackCount) {
+            if (pos + 8 > data.length) break;
+            const chunkId = readUint32();
+            const chunkLen = readUint32();
             
-            while (pos < endPos) {
-                const delta = readVarLength();
-                currentTick += delta;
-                const statusByte = data[pos++];
-                let cmd = statusByte >> 4;
-                let channel = statusByte & 0x0F;
-                if (statusByte === 0xFF) {
-                    const metaType = data[pos++];
-                    const metaLen = readVarLength();
-                    const metaData = data.slice(pos, pos + metaLen);
-                    pos += metaLen;
-                    events.push({ tick: currentTick, type: 'meta', metaType, data: metaData });
-                } else if (statusByte === 0xF0 || statusByte === 0xF7) {
-                    let sysexLen = readVarLength();
-                    pos += sysexLen;
-                } else {
-                    let param1 = data[pos++];
-                    let param2 = null;
-                    if (cmd !== 0xC && cmd !== 0xD) {
-                        param2 = data[pos++];
+            if (chunkId === 0x4D54726B) { // "MTrk"
+                const endPos = pos + chunkLen;
+                const events = [];
+                let currentTick = 0;
+                
+                while (pos < endPos && pos < data.length) {
+                    const delta = readVarLength();
+                    currentTick += delta;
+                    if (pos >= endPos) break;
+                    const statusByte = data[pos++];
+                    let cmd = statusByte >> 4;
+                    let channel = statusByte & 0x0F;
+                    
+                    if (statusByte === 0xFF) { // メタイベント
+                        const metaType = data[pos++];
+                        const metaLen = readVarLength();
+                        const metaData = data.slice(pos, pos + metaLen);
+                        pos += metaLen;
+                        events.push({ tick: currentTick, type: 'meta', metaType, data: metaData });
+                    } else if (statusByte === 0xF0 || statusByte === 0xF7) { // SysEx
+                        let sysexLen = readVarLength();
+                        pos += sysexLen;
+                    } else {
+                        let param1 = data[pos++];
+                        let param2 = null;
+                        if (cmd !== 0xC && cmd !== 0xD) {
+                            param2 = data[pos++];
+                        }
+                        events.push({ tick: currentTick, type: 'note', cmd, channel, param1, param2 });
                     }
-                    events.push({ tick: currentTick, type: 'note', cmd, channel, param1, param2 });
                 }
+                tracks.push({ events });
+                tracksParsed++;
+            } else {
+                // 未知のチャンクはスキップ
+                console.warn(`Skipping unknown chunk: 0x${chunkId.toString(16)}, length ${chunkLen}`);
+                pos += chunkLen;
             }
-            tracks.push({ events });
         }
+        
         return { format, tracks, ppq };
     }
     
@@ -117,18 +137,13 @@
         return null;
     }
     
-    // ========== 72音階対応版 MIDIノート→行インデックス変換 ==========
-    // 修正: 高い音 (pitch大) → 小さい行番号 (上側) にマッピング
-    const MIN_MIDI = 21;   // A0
-    const MAX_MIDI = 108;  // C8
-    const ROWS_72 = 72;
-    function midiPitchToRow72(pitch) {
-        // 基準: MIDI 60 (C4) を中央の行に
+    // ========== MIDIノート → 行番号（上下方向修正版） ==========
+    function midiPitchToRow(pitch, totalRows, offset) {
+        const shifted = pitch - offset;
         const centerMidi = 60;
-        const centerRow = Math.floor(ROWS_72 / 2);  // 36行目
-        // 高いMIDIノートは小さなrowに（上に行く）するため、マイナス
-        let row = centerRow - (pitch - centerMidi);
-        row = Math.min(Math.max(0, row), ROWS_72 - 1);
+        const centerRow = Math.floor(totalRows / 2);
+        let row = centerRow - (shifted - centerMidi);
+        row = Math.min(Math.max(0, row), totalRows - 1);
         return row;
     }
     
@@ -136,7 +151,7 @@
         return tick / ppq;
     }
     
-    // ========== 電子音生成（変更なし） ==========
+    // ========== 電子音生成 ==========
     function createElectronicSound(audioCtx) {
         const duration = 0.5;
         const sampleRate = audioCtx.sampleRate;
@@ -151,68 +166,32 @@
         return buffer;
     }
     
-    // ========== 音階拡張機能 ==========
-    function expandNoteNamesTo72(appCtx) {
-        if (appCtx.NOTE_NAMES && appCtx.NOTE_NAMES.length >= 72) return false;
-        const newNoteNames = [];
-        const notes = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
-        for (let oct = 0; oct < 6; oct++) {
-            for (let i = 0; i < notes.length; i++) {
-                newNoteNames.push(`${notes[i]}${oct}`);
-            }
-        }
-        // 逆順にして上が高音になるように (元のOTO-RAKUの方式に合わせる)
-        appCtx.NOTE_NAMES = newNoteNames.reverse();
-        appCtx.ROWS = newNoteNames.length;
-        if (typeof appCtx.resizeCanvas === 'function') {
-            appCtx.resizeCanvas();
-        } else if (typeof window.resizeCanvas === 'function') {
-            window.resizeCanvas();
-        } else {
-            if (appCtx.drawGridAndPieces) appCtx.drawGridAndPieces();
-        }
-        return true;
-    }
-    
     // ========== メインインポート関数 ==========
     async function importMidi(file, appCtx) {
-        const needExpand = (!appCtx.NOTE_NAMES || appCtx.NOTE_NAMES.length < 72);
-        let expanded = false;
-        if (needExpand) {
-            const doExpand = confirm("MIDI読み込みには72音階（6オクターブ）への拡張が必要です。\n拡張しますか？\n（「はい」でグリッドの音階が増え、MIDIの広い音域を配置できます）");
-            if (doExpand) {
-                expandNoteNamesTo72(appCtx);
-                expanded = true;
-            } else {
-                alert("72音階に拡張しないため、MIDIの音域が24音階（2オクターブ）に制限されます。\n高い音・低い音は正しく配置されない可能性があります。");
-            }
-        }
+        let offset = prompt("MIDIノートのピッチを何半音上下しますか？\n（正の数で音を下げる、負の数で上げる）\n例: 12 で1オクターブ下げる\n0 で原音のまま", "12");
+        if (offset === null) return;
+        offset = parseInt(offset, 10);
+        if (isNaN(offset)) offset = 0;
         
         const arrayBuffer = await file.arrayBuffer();
         const midi = parseMidi(arrayBuffer);
         const ppq = midi.ppq;
-        const { addInstrument, addPiece, currentBPM } = appCtx;
+        const { addInstrument, addPiece, currentBPM, ROWS } = appCtx;
         const projectBPM = currentBPM;
-        
-        const pitchToRowFunc = (expanded || (appCtx.ROWS >= 72)) ? midiPitchToRow72 : (pitch) => {
-            const baseMidi = 60;
-            const baseRow = 12;
-            let row = baseRow - (pitch - baseMidi); // 逆方向に修正（24音階版も同様に）
-            return Math.min(Math.max(0, row), 23);
-        };
+        const totalRows = ROWS || 96;
         
         for (let trackIdx = 0; trackIdx < midi.tracks.length; trackIdx++) {
             const track = midi.tracks[trackIdx];
             const notes = extractNotes(track, ppq, projectBPM);
             if (notes.length === 0) continue;
+            
             let trackName = getTrackName(track);
             if (!trackName) trackName = `MIDI Ch${trackIdx+1}`;
             addInstrument(trackName);
             const newInstId = appCtx.instruments[appCtx.instruments.length-1].id;
+            
             for (const note of notes) {
-                const row = pitchToRowFunc(note.pitch);
-                const maxRow = appCtx.ROWS || 24;
-                if (row < 0 || row >= maxRow) continue;
+                const row = midiPitchToRow(note.pitch, totalRows, offset);
                 const startBeat = ticksToBeats(note.startTick, ppq);
                 const durationBeat = ticksToBeats(note.durationTicks, ppq);
                 if (durationBeat <= 0) continue;
@@ -233,9 +212,9 @@
                 inst.buffer = electronicBuffer;
                 inst.sampleDuration = electronicBuffer.duration;
             }
-            document.getElementById("statusMsg").innerText = `MIDIファイル「${file.name}」をインポートしました。全楽器に電子音を設定しました。${expanded ? " 音階を72音階に拡張しました。" : ""}`;
+            document.getElementById("statusMsg").innerText = `MIDIファイル「${file.name}」をインポートしました。全楽器に電子音を設定しました。オフセット: ${offset}半音`;
         } else {
-            document.getElementById("statusMsg").innerText = `MIDIファイル「${file.name}」をインポートしました。音素材は別途読み込んでください。${expanded ? " 音階を72音階に拡張しました。" : ""}`;
+            document.getElementById("statusMsg").innerText = `MIDIファイル「${file.name}」をインポートしました。音素材は別途読み込んでください。オフセット: ${offset}半音`;
         }
         
         if (appCtx.drawGridAndPieces) appCtx.drawGridAndPieces();
@@ -243,19 +222,19 @@
     
     // ========== プラグイン登録 ==========
     window.OTOPLUGIN.registerPlugin({
-        name: "MIDI to ORM importer",
-        version: "1.0",
+        name: "MIDI to ORM importer (堅牢パーサー版)",
+        version: "2.2",
         author: "OTO-RAKU-Official",
         settingsUI: () => {
-            alert("MIDIファイルを読み込み、楽器とピースを自動生成します。\n72音階への拡張オプション付き。\n変換後、電子音を使うか選択できます。");
+            alert("MIDIファイルを読み込み、楽器とピースを自動生成します。\n読み込み時にピッチのオフセット（半音数）を指定できます。\n上下方向を修正し、低いMIDIノートが下の行に配置されるようになりました。\nまた、不正なMIDIファイルでも可能な限り読み込めるようパーサーを強化しました。");
         },
         setup: (doc, win, ctx) => {
-            console.log("MIDIインポータ起動");
+            console.log("MIDIインポータ起動 (堅牢パーサー版)");
             const toolbar = doc.querySelector(".toolbar");
             if (toolbar && !doc.getElementById("midiImportBtn")) {
                 const btn = doc.createElement("button");
                 btn.id = "midiImportBtn";
-                btn.textContent = "🎹 MIDI読み込み (72音階)";
+                btn.textContent = "🎹 MIDI読み込み (オフセット指定)";
                 btn.style.marginLeft = "8px";
                 btn.addEventListener("click", () => {
                     const input = doc.createElement("input");
