@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>OTO-RAKU-Maker</title>
+    <title>OTO-RAKU-Maker Stage6 - 音MADスタジオ (WAV修正版 / プラグイン対応)</title>
     <style>
         * {
             user-select: none;
@@ -611,8 +611,8 @@ window.OTOPLUGIN.registerPlugin({
             btn.textContent = "📖 使い方";
             btn.style.marginLeft = "8px";
             btn.addEventListener("click", () => {
-                const url = `https://paapaaseizin.github.io/OTO-RAKU-Maker/guide.html`;
-window.open(url, "_blank");
+                const url = `https://www.youtube.com/watch?v=dQw4w9WgXcQ`;
+                window.open(url, "_blank");
             });
             toolbar.appendChild(btn);
         }
@@ -628,10 +628,10 @@ window.open(url, "_blank");
     // ========== 以下、既存のStage6スクリプト（全体） ==========
     // ========== 音階 (2オクターブ・24音階・下が低音) ==========
     let NOTE_NAMES = [];
-    for (let oct = 1; oct <= 2; oct++) {
-        NOTE_NAMES.push(`ド${oct}`, `ド#${oct}`, `レ${oct}`, `レ#${oct}`, `ミ${oct}`, `ファ${oct}`, `ファ#${oct}`, `ソ${oct}`, `ソ#${oct}`, `ラ${oct}`, `ラ#${oct}`, `シ${oct}`);
-    }
-    NOTE_NAMES.reverse();
+for (let oct = 1; oct <= 8; oct++) {  // 1オクターブ〜8オクターブ
+    NOTE_NAMES.push(`ド${oct}`, `ド#${oct}`, `レ${oct}`, `レ#${oct}`, `ミ${oct}`, `ファ${oct}`, `ファ#${oct}`, `ソ${oct}`, `ソ#${oct}`, `ラ${oct}`, `ラ#${oct}`, `シ${oct}`);
+}
+NOTE_NAMES.reverse(); // これで一番下が「ド1」、一番上が「シ8」になる
     let ROWS = NOTE_NAMES.length;
     let CELL_W = 36;
     let ROW_H = 40;
@@ -875,7 +875,9 @@ function updateAllActiveRates() {
     function beatsToPx(beats) { return beats * CELL_W; }
     function pxToBeats(px) { return px / CELL_W; }
     function rowsToPx(row) { return row * ROW_H; }
-    function pxToRow(px) { return Math.floor(px / ROW_H); }
+    function pxToRow(px) {
+    return Math.floor(px / ROW_H);
+}
 
     function updateMaxBeats() {
         let maxCol = 0;
@@ -908,7 +910,10 @@ function updateAllActiveRates() {
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
     function centsToRate(cents) { return Math.pow(2, cents / 1200); }
-    function getSemitoneFromRow(row) { return (ROWS - 1 - row); }
+    function getSemitoneFromRow(row) {
+    // 画面上部（rowが小さい）で高い音にするため、逆転させる
+    return (ROWS - 1 - row) - 36;   // 36はド4のセミトーン基準（任意の中央値）
+}
     function getPlaybackRate(piece, inst) {
         let semitone = getSemitoneFromRow(piece.row);
         let rate = centsToRate(inst.pitchCents) * Math.pow(2, semitone / 12);
@@ -1911,6 +1916,10 @@ function updateAllActiveRates() {
         window.addEventListener("keydown", onKeyDown);
         saveToHistory();
         updateTimeDisplay(); // 初期表示更新
+window.ROWS = ROWS;
+window.NOTE_NAMES = NOTE_NAMES;
+// 描画関数もグローバルに差し替え可能にする
+window.drawGridAndPieces = drawGridAndPieces;
     }
     function escapeHtml(str) { return str.replace(/[&<>]/g, m=>({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
     init();
